@@ -29,6 +29,7 @@ type Player struct {
 const (
 	screenWidth  = 640
 	screenHeight = 480
+	scalePlayer  = 1.0 / 16.0
 )
 
 func (g *Game) Update() error {
@@ -61,9 +62,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opts.GeoM.Reset()
 
-	scalePlayer := 1.0 / 16.0
-
 	opts.GeoM.Scale(scalePlayer, scalePlayer)
+
+	// playerStartX := float64(screenWidth)/2.0 - float64(g.player.Img.Bounds().Dx())*scalePlayer/2.0
+	// playerStartY := float64(screenHeight) - float64(g.player.Img.Bounds().Dy())*scalePlayer
+	// fmt.Println(float64(g.player.Img.Bounds().Dx()) / 2.0)
 	opts.GeoM.Translate(g.player.X, g.player.Y)
 
 	screen.DrawImage(g.player.Img, &opts)
@@ -80,6 +83,8 @@ func main() {
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Space Invasion!")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
+	// fmt.Println(float64(screenWidth) / 2.0 - )
 
 	backgroundImg, _, err := ebitenutil.NewImageFromFile("assets/SpaceInvaders_Background.png")
 	if err != nil {
@@ -102,8 +107,8 @@ func main() {
 		player: &Player{
 			Sprite: &Sprite{
 				Img: playerImg,
-				X:   50.0,
-				Y:   50.0,
+				X:   float64(screenWidth)/2.0 - 512.0*scalePlayer/2.0,
+				Y:   float64(screenHeight) - 512.0*scalePlayer,
 			},
 		},
 	}
