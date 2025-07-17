@@ -2,7 +2,9 @@ package main
 
 import (
 	// "fmt"
+	"image/color"
 	"log"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -12,6 +14,7 @@ type Game struct {
 	BackgroundImg          *ebiten.Image
 	BackgroundBuildingsImg *ebiten.Image
 	player                 *Player
+	bullets                []Bullet
 }
 
 type Sprite struct {
@@ -24,12 +27,18 @@ type Sprite struct {
 
 type Player struct {
 	*Sprite
+	shootTime time.Time
+}
+
+type Bullet struct {
+	*Sprite
 }
 
 const (
 	screenWidth  = 640
 	screenHeight = 480
 	scalePlayer  = 1.0 / 16.0
+	cooldown     = 300 * time.Millisecond
 )
 
 func (g *Game) Update() error {
@@ -39,6 +48,35 @@ func (g *Game) Update() error {
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
 		g.player.X += 2
 	}
+
+	if ebiten.IsKeyPressed(ebiten.KeySpace) {
+		if g.player.shootTime.Before(time.Now().Add(-cooldown)) {
+			g.player.shootTime = time.Now()
+			// make a create bullet function - make sense to make a bullets package - maybe just own file?
+			newBullet := Bullet{
+				Sprite: &Sprite{
+					Img: ebiten.NewImage(3, 6),
+					// probably should make these dynamic if possible
+					X: g.player.X + 16,
+					Y: g.player.Y - 6,
+				},
+			}
+			newBullet.Img.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
+
+			g.bullets = append(g.bullets, newBullet)
+			// fmt.Println(g.bullets)
+		}
+	}
+	i := 0
+	for _, bullet := range g.bullets {
+		if bullet.Y > -4 {
+			bullet.Y -= 4
+			g.bullets[i] = bullet
+			i++
+		}
+	}
+
+	g.bullets = g.bullets[:i]
 
 	return nil
 }
@@ -64,14 +102,17 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opts.GeoM.Scale(scalePlayer, scalePlayer)
 
-	// playerStartX := float64(screenWidth)/2.0 - float64(g.player.Img.Bounds().Dx())*scalePlayer/2.0
-	// playerStartY := float64(screenHeight) - float64(g.player.Img.Bounds().Dy())*scalePlayer
-	// fmt.Println(float64(g.player.Img.Bounds().Dx()) / 2.0)
 	opts.GeoM.Translate(g.player.X, g.player.Y)
 
 	screen.DrawImage(g.player.Img, &opts)
 
 	opts.GeoM.Reset()
+
+	for _, bullet := range g.bullets {
+		opts.GeoM.Translate(bullet.X, bullet.Y)
+		screen.DrawImage(bullet.Img, &opts)
+		opts.GeoM.Reset()
+	}
 
 }
 
