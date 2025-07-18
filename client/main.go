@@ -2,6 +2,7 @@ package main
 
 import (
 	// "fmt"
+	"image"
 	"image/color"
 	"log"
 	"time"
@@ -14,6 +15,7 @@ type Game struct {
 	BackgroundImg          *ebiten.Image
 	BackgroundBuildingsImg *ebiten.Image
 	player                 *Player
+	enemy                  *Enemy
 	bullets                []Bullet
 }
 
@@ -34,10 +36,16 @@ type Bullet struct {
 	*Sprite
 }
 
+type Enemy struct {
+	*Sprite
+	health int64
+}
+
 const (
 	screenWidth  = 640
 	screenHeight = 480
 	scalePlayer  = 1.0 / 16.0
+	scaleEnemy   = 4.0
 	cooldown     = 300 * time.Millisecond
 )
 
@@ -67,6 +75,7 @@ func (g *Game) Update() error {
 			// fmt.Println(g.bullets)
 		}
 	}
+
 	i := 0
 	for _, bullet := range g.bullets {
 		if bullet.Y > -4 {
@@ -108,6 +117,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opts.GeoM.Reset()
 
+	opts.GeoM.Scale(scaleEnemy, scaleEnemy)
+	opts.GeoM.Translate(g.enemy.X, g.enemy.Y)
+	screen.DrawImage(g.enemy.Img, &opts)
+
+	opts.GeoM.Reset()
+
 	for _, bullet := range g.bullets {
 		opts.GeoM.Translate(bullet.X, bullet.Y)
 		screen.DrawImage(bullet.Img, &opts)
@@ -142,6 +157,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	spritesImg, _, err := ebitenutil.NewImageFromFile("assets/SpaceInvaders.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	game := Game{
 		BackgroundImg:          backgroundImg,
 		BackgroundBuildingsImg: backgroundBuildingsImg,
@@ -151,6 +171,14 @@ func main() {
 				X:   float64(screenWidth)/2.0 - 512.0*scalePlayer/2.0,
 				Y:   float64(screenHeight) - 512.0*scalePlayer,
 			},
+		},
+		enemy: &Enemy{
+			Sprite: &Sprite{
+				Img: spritesImg.SubImage(image.Rect(2, 4, 14, 12)).(*ebiten.Image),
+				X:   50,
+				Y:   50,
+			},
+			health: 1,
 		},
 	}
 
