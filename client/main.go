@@ -27,6 +27,8 @@ type Game struct {
 	bullets                []Bullet
 }
 
+// may just ultimately remove the sprite stuct
+// player and enemies seem different enough to me
 type Sprite struct {
 	Img *ebiten.Image
 	X   float64
@@ -45,13 +47,14 @@ type Bullet struct {
 }
 
 type Enemy struct {
-	// *Sprite
 	X            float64
 	Y            float64
 	speedInTps   int
 	frameCounter int
 	health       int64
 	frame        int
+	speed        float64
+	dropDistance float64
 	animations   map[int]*ebiten.Image
 }
 
@@ -67,9 +70,18 @@ func (e *Enemy) Animate() {
 	}
 }
 
+func (e *Enemy) Move() {
+	e.X += e.speed
+	if e.X+12.0*scaleEnemy > screenWidth || e.X < 0.0 {
+		e.speed *= -1.0
+		e.Y += e.dropDistance
+	}
+}
+
 func (g *Game) Update() error {
 
 	g.enemy.Animate()
+	g.enemy.Move()
 
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 		g.player.X -= 2
@@ -194,18 +206,14 @@ func main() {
 			},
 		},
 		enemy: &Enemy{
-			// Sprite: &Sprite{
-			// 	// Img: spritesImg.SubImage(image.Rect(2, 4, 14, 12)).(*ebiten.Image),
-			// 	X: 50,
-			// 	Y: 50,
-			// },
-			// Img2:         spritesImg.SubImage(image.Rect(18, 4, 30, 16)).(*ebiten.Image),
 			X:            50,
 			Y:            50,
 			speedInTps:   20,
 			frameCounter: 20,
 			health:       1,
 			frame:        1,
+			speed:        4.0,
+			dropDistance: 15.0,
 			animations: map[int]*ebiten.Image{
 				1: spritesImg.SubImage(image.Rect(2, 4, 14, 12)).(*ebiten.Image),
 				2: spritesImg.SubImage(image.Rect(18, 4, 30, 14)).(*ebiten.Image),
