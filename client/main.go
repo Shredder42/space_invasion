@@ -11,6 +11,14 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
+const (
+	screenWidth  = 640
+	screenHeight = 480
+	scalePlayer  = 1.0 / 16.0
+	scaleEnemy   = 4.0
+	cooldown     = 300 * time.Millisecond
+)
+
 type Game struct {
 	BackgroundImg          *ebiten.Image
 	BackgroundBuildingsImg *ebiten.Image
@@ -38,18 +46,32 @@ type Bullet struct {
 
 type Enemy struct {
 	*Sprite
-	health int64
+	Img2         *ebiten.Image
+	SpeedInTps   int
+	frameCounter int
+	health       int64
+	frame        int
+	activeImage  *ebiten.Image
 }
 
-const (
-	screenWidth  = 640
-	screenHeight = 480
-	scalePlayer  = 1.0 / 16.0
-	scaleEnemy   = 4.0
-	cooldown     = 300 * time.Millisecond
-)
+func (e *Enemy) Animate() {
+	e.frameCounter -= 1
+	if e.frameCounter < 0 {
+		e.frameCounter = e.SpeedInTps
+		if e.frame == 1 {
+			e.frame = 2
+			e.activeImage = e.Img2
+		} else if e.frame == 2 {
+			e.frame = 1
+			e.activeImage = e.Img
+		}
+	}
+}
 
 func (g *Game) Update() error {
+
+	g.enemy.Animate()
+
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 		g.player.X -= 2
 	}
@@ -119,7 +141,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opts.GeoM.Scale(scaleEnemy, scaleEnemy)
 	opts.GeoM.Translate(g.enemy.X, g.enemy.Y)
-	screen.DrawImage(g.enemy.Img, &opts)
+	screen.DrawImage(g.enemy.activeImage, &opts)
 
 	opts.GeoM.Reset()
 
@@ -178,7 +200,12 @@ func main() {
 				X:   50,
 				Y:   50,
 			},
-			health: 1,
+			Img2:         spritesImg.SubImage(image.Rect(18, 4, 30, 16)).(*ebiten.Image),
+			SpeedInTps:   20,
+			frameCounter: 20,
+			health:       1,
+			frame:        1,
+			activeImage:  spritesImg.SubImage(image.Rect(2, 4, 14, 12)).(*ebiten.Image),
 		},
 	}
 
