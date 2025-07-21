@@ -45,25 +45,24 @@ type Bullet struct {
 }
 
 type Enemy struct {
-	*Sprite
-	Img2         *ebiten.Image
-	SpeedInTps   int
+	// *Sprite
+	X            float64
+	Y            float64
+	speedInTps   int
 	frameCounter int
 	health       int64
 	frame        int
-	activeImage  *ebiten.Image
+	animations   map[int]*ebiten.Image
 }
 
 func (e *Enemy) Animate() {
 	e.frameCounter -= 1
 	if e.frameCounter < 0 {
-		e.frameCounter = e.SpeedInTps
+		e.frameCounter = e.speedInTps
 		if e.frame == 1 {
 			e.frame = 2
-			e.activeImage = e.Img2
 		} else if e.frame == 2 {
 			e.frame = 1
-			e.activeImage = e.Img
 		}
 	}
 }
@@ -141,7 +140,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opts.GeoM.Scale(scaleEnemy, scaleEnemy)
 	opts.GeoM.Translate(g.enemy.X, g.enemy.Y)
-	screen.DrawImage(g.enemy.activeImage, &opts)
+	screen.DrawImage(g.enemy.animations[g.enemy.frame], &opts)
 
 	opts.GeoM.Reset()
 
@@ -195,17 +194,22 @@ func main() {
 			},
 		},
 		enemy: &Enemy{
-			Sprite: &Sprite{
-				Img: spritesImg.SubImage(image.Rect(2, 4, 14, 12)).(*ebiten.Image),
-				X:   50,
-				Y:   50,
-			},
-			Img2:         spritesImg.SubImage(image.Rect(18, 4, 30, 16)).(*ebiten.Image),
-			SpeedInTps:   20,
+			// Sprite: &Sprite{
+			// 	// Img: spritesImg.SubImage(image.Rect(2, 4, 14, 12)).(*ebiten.Image),
+			// 	X: 50,
+			// 	Y: 50,
+			// },
+			// Img2:         spritesImg.SubImage(image.Rect(18, 4, 30, 16)).(*ebiten.Image),
+			X:            50,
+			Y:            50,
+			speedInTps:   20,
 			frameCounter: 20,
 			health:       1,
 			frame:        1,
-			activeImage:  spritesImg.SubImage(image.Rect(2, 4, 14, 12)).(*ebiten.Image),
+			animations: map[int]*ebiten.Image{
+				1: spritesImg.SubImage(image.Rect(2, 4, 14, 12)).(*ebiten.Image),
+				2: spritesImg.SubImage(image.Rect(18, 4, 30, 14)).(*ebiten.Image),
+			},
 		},
 	}
 
