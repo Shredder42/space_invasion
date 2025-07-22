@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "fmt"
 	"image"
 	"image/color"
 	"log"
@@ -12,8 +11,8 @@ import (
 )
 
 const (
-	screenWidth  = 640
-	screenHeight = 480
+	screenWidth  = 900
+	screenHeight = 600
 	scalePlayer  = 1.0 / 16.0
 	scaleEnemy   = 4.0
 	cooldown     = 300 * time.Millisecond
@@ -23,8 +22,10 @@ type Game struct {
 	BackgroundImg          *ebiten.Image
 	BackgroundBuildingsImg *ebiten.Image
 	player                 *Player
-	enemy                  *Enemy
-	bullets                []Bullet
+	enemies                []*Enemy
+	// enemy1                 *Enemy
+	// enemy2                 *Enemy
+	bullets []Bullet
 }
 
 // may just ultimately remove the sprite stuct
@@ -49,9 +50,10 @@ type Bullet struct {
 type Enemy struct {
 	X            float64
 	Y            float64
+	width        float64
 	speedInTps   int
 	frameCounter int
-	health       int64
+	health       int
 	frame        int
 	speed        float64
 	dropDistance float64
@@ -72,7 +74,7 @@ func (e *Enemy) Animate() {
 
 func (e *Enemy) Move() {
 	e.X += e.speed
-	if e.X+12.0*scaleEnemy > screenWidth || e.X < 0.0 {
+	if e.X+e.width > screenWidth || e.X < 0.0 {
 		e.speed *= -1.0
 		e.Y += e.dropDistance
 	}
@@ -80,8 +82,15 @@ func (e *Enemy) Move() {
 
 func (g *Game) Update() error {
 
-	g.enemy.Animate()
-	g.enemy.Move()
+	// g.enemy1.Animate()
+	// g.enemy2.Animate()
+	// g.enemy1.Move()
+	// g.enemy2.Move()
+
+	for _, enemy := range g.enemies {
+		enemy.Animate()
+		enemy.Move()
+	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 		g.player.X -= 2
@@ -121,6 +130,7 @@ func (g *Game) Update() error {
 	g.bullets = g.bullets[:i]
 
 	return nil
+
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
@@ -150,11 +160,23 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opts.GeoM.Reset()
 
-	opts.GeoM.Scale(scaleEnemy, scaleEnemy)
-	opts.GeoM.Translate(g.enemy.X, g.enemy.Y)
-	screen.DrawImage(g.enemy.animations[g.enemy.frame], &opts)
+	// opts.GeoM.Scale(scaleEnemy, scaleEnemy)
+	// opts.GeoM.Translate(g.enemy1.X, g.enemy1.Y)
+	// screen.DrawImage(g.enemy1.animations[g.enemy1.frame], &opts)
 
 	opts.GeoM.Reset()
+
+	for _, enemy := range g.enemies {
+		opts.GeoM.Scale(scaleEnemy, scaleEnemy)
+		opts.GeoM.Translate(enemy.X, enemy.Y)
+		screen.DrawImage(enemy.animations[enemy.frame], &opts)
+		opts.GeoM.Reset()
+	}
+	// opts.GeoM.Scale(scaleEnemy, scaleEnemy)
+	// opts.GeoM.Translate(g.enemy2.X, g.enemy2.Y)
+	// screen.DrawImage(g.enemy2.animations[g.enemy2.frame], &opts)
+
+	// opts.GeoM.Reset()
 
 	for _, bullet := range g.bullets {
 		opts.GeoM.Translate(bullet.X, bullet.Y)
@@ -165,15 +187,13 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return 640, 480
+	return 900, 600
 }
 
 func main() {
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Space Invasion!")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-
-	// fmt.Println(float64(screenWidth) / 2.0 - )
 
 	backgroundImg, _, err := ebitenutil.NewImageFromFile("assets/SpaceInvaders_Background.png")
 	if err != nil {
@@ -194,6 +214,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	enemy1 := map[int]*ebiten.Image{
+		1: spritesImg.SubImage(image.Rect(2, 4, 14, 12)).(*ebiten.Image),
+		2: spritesImg.SubImage(image.Rect(18, 4, 30, 14)).(*ebiten.Image),
+	}
 
 	game := Game{
 		BackgroundImg:          backgroundImg,
@@ -205,23 +229,63 @@ func main() {
 				Y:   float64(screenHeight) - 512.0*scalePlayer,
 			},
 		},
-		enemy: &Enemy{
-			X:            50,
-			Y:            50,
-			speedInTps:   20,
-			frameCounter: 20,
-			health:       1,
-			frame:        1,
-			speed:        4.0,
-			dropDistance: 15.0,
-			animations: map[int]*ebiten.Image{
-				1: spritesImg.SubImage(image.Rect(2, 4, 14, 12)).(*ebiten.Image),
-				2: spritesImg.SubImage(image.Rect(18, 4, 30, 14)).(*ebiten.Image),
-			},
-		},
+		enemies: createFleet(enemy1),
+		// enemy1: &Enemy{
+		// 	X:            50,
+		// 	Y:            50,
+		// 	width:        12.0 * scaleEnemy,
+		// 	speedInTps:   20,
+		// 	frameCounter: 20,
+		// 	health:       1,
+		// 	frame:        1,
+		// 	speed:        1.0,
+		// 	dropDistance: 15.0,
+		// 	animations: map[int]*ebiten.Image{
+		// 		1: spritesImg.SubImage(image.Rect(2, 4, 14, 12)).(*ebiten.Image),
+		// 		2: spritesImg.SubImage(image.Rect(18, 4, 30, 14)).(*ebiten.Image),
+		// 	},
+		// },
+		// enemy2: &Enemy{
+		// 	X:            100,
+		// 	Y:            100,
+		// 	width:        12.0 * scaleEnemy,
+		// 	speedInTps:   20,
+		// 	frameCounter: 20,
+		// 	health:       1,
+		// 	frame:        1,
+		// 	speed:        1.0,
+		// 	dropDistance: 15.0,
+		// 	animations: map[int]*ebiten.Image{
+		// 		1: spritesImg.SubImage(image.Rect(2, 20, 14, 28)).(*ebiten.Image),
+		// 		2: spritesImg.SubImage(image.Rect(18, 20, 30, 28)).(*ebiten.Image),
+		// 	},
+		// },
 	}
 
 	if err := ebiten.RunGame(&game); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func createFleet(enemyNum map[int]*ebiten.Image) []*Enemy {
+	availableSpaceX := screenWidth - (2 * 12.0 * scaleEnemy) // may want to put in dynamic enemy width
+	numberEnemiesX := int(availableSpaceX / (2 * 12.0 * scaleEnemy))
+
+	enemyRow := []*Enemy{}
+	for i := 0; i < numberEnemiesX; i++ {
+		enemyRow = append(enemyRow, &Enemy{
+			X:            12.0*scaleEnemy + 2*12.0*scaleEnemy*float64(i),
+			Y:            50,
+			width:        12.0 * scaleEnemy,
+			speedInTps:   20,
+			frameCounter: 20,
+			health:       1,
+			frame:        1,
+			speed:        1.0,
+			dropDistance: 15.0,
+			animations:   enemyNum,
+		})
+	}
+
+	return enemyRow
 }
