@@ -29,7 +29,21 @@ func (e *Enemy) Animate() {
 
 func (e *Enemy) Move() {
 	e.X += e.speed
+	// if e.X+e.width > screenWidth || e.X < 0.0 {
+	// 	e.speed *= -1.0
+	// 	e.Y += e.dropDistance
+	// }
+}
+
+func (e *Enemy) checkEdges() bool {
 	if e.X+e.width > screenWidth || e.X < 0.0 {
+		return true
+	}
+	return false
+}
+
+func (e *Enemy) changeDirection(hitEdge bool) {
+	if hitEdge {
 		e.speed *= -1.0
 		e.Y += e.dropDistance
 	}

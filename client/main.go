@@ -23,9 +23,7 @@ type Game struct {
 	BackgroundBuildingsImg *ebiten.Image
 	player                 *Player
 	enemies                [][]*Enemy
-	// enemy1                 *Enemy
-	// enemy2                 *Enemy
-	bullets []Bullet
+	bullets                []Bullet
 }
 
 // may just ultimately remove the sprite stuct
@@ -49,9 +47,21 @@ type Bullet struct {
 
 func (g *Game) Update() error {
 
+	// might be best to make this fleet level (also for controlling speed and health as well)
+	hitEdge := false
+	for _, row := range g.enemies {
+		for _, enemy := range row {
+			hitEdge = enemy.checkEdges()
+			if hitEdge {
+				break
+			}
+		}
+	}
+
 	for _, row := range g.enemies {
 		for _, enemy := range row {
 			enemy.Animate()
+			enemy.changeDirection(hitEdge)
 			enemy.Move()
 		}
 	}
@@ -124,12 +134,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opts.GeoM.Reset()
 
-	// opts.GeoM.Scale(scaleEnemy, scaleEnemy)
-	// opts.GeoM.Translate(g.enemy1.X, g.enemy1.Y)
-	// screen.DrawImage(g.enemy1.animations[g.enemy1.frame], &opts)
-
-	opts.GeoM.Reset()
-
 	for _, row := range g.enemies {
 		for _, enemy := range row {
 			opts.GeoM.Scale(scaleEnemy, scaleEnemy)
@@ -138,17 +142,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			opts.GeoM.Reset()
 		}
 	}
-	// for _, enemy := range g.enemies {
-	// 	opts.GeoM.Scale(scaleEnemy, scaleEnemy)
-	// 	opts.GeoM.Translate(enemy.X, enemy.Y)
-	// 	screen.DrawImage(enemy.animations[enemy.frame], &opts)
-	// 	opts.GeoM.Reset()
-	// }
-	// opts.GeoM.Scale(scaleEnemy, scaleEnemy)
-	// opts.GeoM.Translate(g.enemy2.X, g.enemy2.Y)
-	// screen.DrawImage(g.enemy2.animations[g.enemy2.frame], &opts)
-
-	// opts.GeoM.Reset()
 
 	for _, bullet := range g.bullets {
 		opts.GeoM.Translate(bullet.X, bullet.Y)
