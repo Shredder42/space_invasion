@@ -35,25 +35,50 @@ func (e *Enemy) Move() {
 	}
 }
 
-func createFleet(enemyNum map[int]*ebiten.Image) []*Enemy {
+func createFleet(enemy1, enemy2 map[int]*ebiten.Image) [][]*Enemy {
 	availableSpaceX := screenWidth - (2 * 12.0 * scaleEnemy) // may want to put in dynamic enemy width
 	numberEnemiesX := int(availableSpaceX / (2 * 12.0 * scaleEnemy))
 
-	enemyRow := []*Enemy{}
-	for i := 0; i < numberEnemiesX; i++ {
-		enemyRow = append(enemyRow, &Enemy{
-			X:            12.0*scaleEnemy + 2*12.0*scaleEnemy*float64(i),
-			Y:            50,
-			width:        12.0 * scaleEnemy,
-			speedInTps:   20,
-			frameCounter: 20,
-			health:       1,
-			frame:        1,
-			speed:        1.0,
-			dropDistance: 15.0,
-			animations:   enemyNum,
-		})
+	enemyFleet := [][]*Enemy{}
+	for i := 0; i < 4; i++ {
+		enemyRow := []*Enemy{}
+		animation := enemy1
+		if i%2 == 0 {
+			animation = enemy1
+		} else {
+			animation = enemy2
+		}
+		for j := 0; j < numberEnemiesX; j++ {
+			enemyRow = append(enemyRow, &Enemy{
+				X:            12.0*scaleEnemy + 2*12.0*scaleEnemy*float64(j),
+				Y:            25.0 + 50*float64(i),
+				width:        12.0 * scaleEnemy,
+				speedInTps:   20,
+				frameCounter: 20,
+				health:       1,
+				frame:        1,
+				speed:        1.0,
+				dropDistance: 15.0,
+				animations:   animation,
+			})
+		}
+		enemyFleet = append(enemyFleet, enemyRow)
 	}
 
-	return enemyRow
+	return enemyFleet
 }
+
+// for i := 0; i < numberEnemiesX; i++ {
+// 	enemyRow = append(enemyRow, &Enemy{
+// 		X:            12.0*scaleEnemy + 2*12.0*scaleEnemy*float64(i),
+// 		Y:            50,
+// 		width:        12.0 * scaleEnemy,
+// 		speedInTps:   20,
+// 		frameCounter: 20,
+// 		health:       1,
+// 		frame:        1,
+// 		speed:        1.0,
+// 		dropDistance: 15.0,
+// 		animations:   enemyNum,
+// 	})
+// }

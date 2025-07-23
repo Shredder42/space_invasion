@@ -22,7 +22,7 @@ type Game struct {
 	BackgroundImg          *ebiten.Image
 	BackgroundBuildingsImg *ebiten.Image
 	player                 *Player
-	enemies                []*Enemy
+	enemies                [][]*Enemy
 	// enemy1                 *Enemy
 	// enemy2                 *Enemy
 	bullets []Bullet
@@ -49,14 +49,11 @@ type Bullet struct {
 
 func (g *Game) Update() error {
 
-	// g.enemy1.Animate()
-	// g.enemy2.Animate()
-	// g.enemy1.Move()
-	// g.enemy2.Move()
-
-	for _, enemy := range g.enemies {
-		enemy.Animate()
-		enemy.Move()
+	for _, row := range g.enemies {
+		for _, enemy := range row {
+			enemy.Animate()
+			enemy.Move()
+		}
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
@@ -133,12 +130,20 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opts.GeoM.Reset()
 
-	for _, enemy := range g.enemies {
-		opts.GeoM.Scale(scaleEnemy, scaleEnemy)
-		opts.GeoM.Translate(enemy.X, enemy.Y)
-		screen.DrawImage(enemy.animations[enemy.frame], &opts)
-		opts.GeoM.Reset()
+	for _, row := range g.enemies {
+		for _, enemy := range row {
+			opts.GeoM.Scale(scaleEnemy, scaleEnemy)
+			opts.GeoM.Translate(enemy.X, enemy.Y)
+			screen.DrawImage(enemy.animations[enemy.frame], &opts)
+			opts.GeoM.Reset()
+		}
 	}
+	// for _, enemy := range g.enemies {
+	// 	opts.GeoM.Scale(scaleEnemy, scaleEnemy)
+	// 	opts.GeoM.Translate(enemy.X, enemy.Y)
+	// 	screen.DrawImage(enemy.animations[enemy.frame], &opts)
+	// 	opts.GeoM.Reset()
+	// }
 	// opts.GeoM.Scale(scaleEnemy, scaleEnemy)
 	// opts.GeoM.Translate(g.enemy2.X, g.enemy2.Y)
 	// screen.DrawImage(g.enemy2.animations[g.enemy2.frame], &opts)
@@ -181,9 +186,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	enemy1 := map[int]*ebiten.Image{
-		1: spritesImg.SubImage(image.Rect(2, 4, 14, 12)).(*ebiten.Image),
+		1: spritesImg.SubImage(image.Rect(2, 4, 14, 14)).(*ebiten.Image),
 		2: spritesImg.SubImage(image.Rect(18, 4, 30, 14)).(*ebiten.Image),
+	}
+
+	enemy2 := map[int]*ebiten.Image{
+		1: spritesImg.SubImage(image.Rect(2, 20, 14, 28)).(*ebiten.Image),
+		2: spritesImg.SubImage(image.Rect(18, 20, 30, 28)).(*ebiten.Image),
 	}
 
 	game := Game{
@@ -196,7 +207,7 @@ func main() {
 				Y:   float64(screenHeight) - 512.0*scalePlayer,
 			},
 		},
-		enemies: createFleet(enemy1),
+		enemies: createFleet(enemy1, enemy2),
 		// enemy1: &Enemy{
 		// 	X:            50,
 		// 	Y:            50,
