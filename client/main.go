@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"log"
@@ -22,7 +23,7 @@ type Game struct {
 	BackgroundImg          *ebiten.Image
 	BackgroundBuildingsImg *ebiten.Image
 	player                 *Player
-	enemies                [][]*Enemy
+	enemyFleet             [][]*Enemy
 	bullets                []Bullet
 }
 
@@ -45,12 +46,41 @@ type Bullet struct {
 	*Sprite
 }
 
+func (g *Game) detectCollision(e *Enemy, b Bullet) bool {
+	if e.X < b.X+3.0 &&
+		e.X+12.0*scaleEnemy > b.X &&
+		e.Y < b.Y+6.0 &&
+		e.Y+10.0 > b.Y {
+		fmt.Printf("enemy: %+v\n", e)
+		return true
+	}
+	return false
+	// bullet is 3x6
+}
+
+func FindIndex[T comparable](slice []T, item T) int {
+	for i, v := range slice {
+		if v == item {
+			return i
+		}
+	}
+	return -1
+}
+
 func (g *Game) Update() error {
 
 	// might be best to make this fleet level (also for controlling speed and health as well)
 	hitEdge := false
-	for _, row := range g.enemies {
+	bulletHits := []*Bullet{}
+	enemyHits := []*Enemy{}
+	for _, row := range g.enemyFleet {
 		for _, enemy := range row {
+			for _, bullet := range g.bullets {
+				if g.detectCollision(enemy, bullet) {
+					bulletHits = append(bulletHits, &bullet)
+					enemyHits = append(enemyHits, enemy)
+				}
+			}
 			hitEdge = enemy.checkEdges()
 			if hitEdge {
 				break
@@ -58,13 +88,39 @@ func (g *Game) Update() error {
 		}
 	}
 
-	for _, row := range g.enemies {
+	for _, bullet := range bulletHits {
+		idx := FindIndex(g.bullets, *bullet)
+		g.bullets = append(g.bullets[:idx], g.bullets[idx+1:]...)
+	}
+
+	// for _, hitEnemy := range enemyHits {
+	// 	for _, row := range g.enemyFleet {
+	// 		idx := FindIndex(row, hitEnemy)
+	// 		if idx == -1 {
+	// 			continue
+	// 		}
+	// 		row = append(row[:idx], row[idx+1:]...)
+	// 	}
+	// }
+
+	for _, row := range g.enemyFleet {
 		for _, enemy := range row {
 			enemy.Animate()
 			enemy.changeDirection(hitEdge)
-			enemy.Move()
+			// enemy.Move()
 		}
 	}
+
+	i := 0
+	for _, bullet := range g.bullets {
+		if bullet.Y > -4 {
+			bullet.Y -= 4
+			g.bullets[i] = bullet
+			i++
+		}
+	}
+
+	g.bullets = g.bullets[:i]
 
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 		g.player.X -= 2
@@ -91,17 +147,6 @@ func (g *Game) Update() error {
 			// fmt.Println(g.bullets)
 		}
 	}
-
-	i := 0
-	for _, bullet := range g.bullets {
-		if bullet.Y > -4 {
-			bullet.Y -= 4
-			g.bullets[i] = bullet
-			i++
-		}
-	}
-
-	g.bullets = g.bullets[:i]
 
 	return nil
 
@@ -134,7 +179,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opts.GeoM.Reset()
 
-	for _, row := range g.enemies {
+	for _, row := range g.enemyFleet {
 		for _, enemy := range row {
 			opts.GeoM.Scale(scaleEnemy, scaleEnemy)
 			opts.GeoM.Translate(enemy.X, enemy.Y)
@@ -200,7 +245,7 @@ func main() {
 				Y:   float64(screenHeight) - 512.0*scalePlayer,
 			},
 		},
-		enemies: createFleet(enemy1, enemy2),
+		enemyFleet: createFleet(enemy1, enemy2),
 		// enemy1: &Enemy{
 		// 	X:            50,
 		// 	Y:            50,

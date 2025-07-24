@@ -29,10 +29,6 @@ func (e *Enemy) Animate() {
 
 func (e *Enemy) Move() {
 	e.X += e.speed
-	// if e.X+e.width > screenWidth || e.X < 0.0 {
-	// 	e.speed *= -1.0
-	// 	e.Y += e.dropDistance
-	// }
 }
 
 func (e *Enemy) checkEdges() bool {
@@ -57,14 +53,14 @@ func createFleet(enemy1, enemy2 map[int]*ebiten.Image) [][]*Enemy {
 	for i := 0; i < 4; i++ {
 		enemyRow := []*Enemy{}
 		animation := enemy1
-		if i%2 == 0 {
-			animation = enemy1
-		} else {
+		xOffset := 0.0
+		if i%2 == 1 {
 			animation = enemy2
+			xOffset = 3.0
 		}
 		for j := 0; j < numberEnemiesX; j++ {
 			enemyRow = append(enemyRow, &Enemy{
-				X:            12.0*scaleEnemy + 2*12.0*scaleEnemy*float64(j),
+				X:            12.0*scaleEnemy + 2*12.0*scaleEnemy*float64(j) + xOffset,
 				Y:            25.0 + 50*float64(i),
 				width:        12.0 * scaleEnemy,
 				speedInTps:   20,
@@ -81,18 +77,3 @@ func createFleet(enemy1, enemy2 map[int]*ebiten.Image) [][]*Enemy {
 
 	return enemyFleet
 }
-
-// for i := 0; i < numberEnemiesX; i++ {
-// 	enemyRow = append(enemyRow, &Enemy{
-// 		X:            12.0*scaleEnemy + 2*12.0*scaleEnemy*float64(i),
-// 		Y:            50,
-// 		width:        12.0 * scaleEnemy,
-// 		speedInTps:   20,
-// 		frameCounter: 20,
-// 		health:       1,
-// 		frame:        1,
-// 		speed:        1.0,
-// 		dropDistance: 15.0,
-// 		animations:   enemyNum,
-// 	})
-// }
