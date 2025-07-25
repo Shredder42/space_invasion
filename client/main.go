@@ -24,7 +24,7 @@ type Game struct {
 	BackgroundBuildingsImg *ebiten.Image
 	player                 *Player
 	enemyFleet             [][]*Enemy
-	bullets                []Bullet
+	bullets                []*Bullet
 }
 
 // may just ultimately remove the sprite stuct
@@ -46,7 +46,7 @@ type Bullet struct {
 	*Sprite
 }
 
-func (g *Game) detectCollision(e *Enemy, b Bullet) bool {
+func (g *Game) detectCollision(e *Enemy, b *Bullet) bool {
 	if e.X < b.X+3.0 &&
 		e.X+12.0*scaleEnemy > b.X &&
 		e.Y < b.Y+6.0 &&
@@ -67,6 +67,26 @@ func FindIndex[T comparable](slice []T, item T) int {
 	return -1
 }
 
+func (g *Game) removeEnemy(target *Enemy) {
+	for rowIndex, row := range g.enemyFleet {
+		for colIndex, enemy := range row {
+			if enemy == target {
+				g.enemyFleet[rowIndex] = append(row[:colIndex], row[colIndex+1:]...)
+				return
+			}
+		}
+	}
+}
+
+func (g *Game) removeBullet(target *Bullet) {
+	for index, bullet := range g.bullets {
+		if bullet == target {
+			g.bullets = append(g.bullets[:index], g.bullets[index+1:]...)
+			return
+		}
+	}
+}
+
 func (g *Game) Update() error {
 
 	// might be best to make this fleet level (also for controlling speed and health as well)
@@ -77,7 +97,7 @@ func (g *Game) Update() error {
 		for _, enemy := range row {
 			for _, bullet := range g.bullets {
 				if g.detectCollision(enemy, bullet) {
-					bulletHits = append(bulletHits, &bullet)
+					bulletHits = append(bulletHits, bullet)
 					enemyHits = append(enemyHits, enemy)
 				}
 			}
@@ -89,19 +109,12 @@ func (g *Game) Update() error {
 	}
 
 	for _, bullet := range bulletHits {
-		idx := FindIndex(g.bullets, *bullet)
-		g.bullets = append(g.bullets[:idx], g.bullets[idx+1:]...)
+		g.removeBullet(bullet)
 	}
 
-	// for _, hitEnemy := range enemyHits {
-	// 	for _, row := range g.enemyFleet {
-	// 		idx := FindIndex(row, hitEnemy)
-	// 		if idx == -1 {
-	// 			continue
-	// 		}
-	// 		row = append(row[:idx], row[idx+1:]...)
-	// 	}
-	// }
+	for _, hitEnemy := range enemyHits {
+		g.removeEnemy(hitEnemy)
+	}
 
 	for _, row := range g.enemyFleet {
 		for _, enemy := range row {
@@ -111,16 +124,12 @@ func (g *Game) Update() error {
 		}
 	}
 
-	i := 0
 	for _, bullet := range g.bullets {
-		if bullet.Y > -4 {
-			bullet.Y -= 4
-			g.bullets[i] = bullet
-			i++
+		if bullet.Y < -4 {
+			g.removeBullet(bullet)
 		}
+		bullet.Y -= 4
 	}
-
-	g.bullets = g.bullets[:i]
 
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 		g.player.X -= 2
@@ -133,7 +142,7 @@ func (g *Game) Update() error {
 		if g.player.shootTime.Before(time.Now().Add(-cooldown)) {
 			g.player.shootTime = time.Now()
 			// make a create bullet function - make sense to make a bullets package - maybe just own file?
-			newBullet := Bullet{
+			newBullet := &Bullet{
 				Sprite: &Sprite{
 					Img: ebiten.NewImage(3, 6),
 					// probably should make these dynamic if possible
@@ -246,36 +255,6 @@ func main() {
 			},
 		},
 		enemyFleet: createFleet(enemy1, enemy2),
-		// enemy1: &Enemy{
-		// 	X:            50,
-		// 	Y:            50,
-		// 	width:        12.0 * scaleEnemy,
-		// 	speedInTps:   20,
-		// 	frameCounter: 20,
-		// 	health:       1,
-		// 	frame:        1,
-		// 	speed:        1.0,
-		// 	dropDistance: 15.0,
-		// 	animations: map[int]*ebiten.Image{
-		// 		1: spritesImg.SubImage(image.Rect(2, 4, 14, 12)).(*ebiten.Image),
-		// 		2: spritesImg.SubImage(image.Rect(18, 4, 30, 14)).(*ebiten.Image),
-		// 	},
-		// },
-		// enemy2: &Enemy{
-		// 	X:            100,
-		// 	Y:            100,
-		// 	width:        12.0 * scaleEnemy,
-		// 	speedInTps:   20,
-		// 	frameCounter: 20,
-		// 	health:       1,
-		// 	frame:        1,
-		// 	speed:        1.0,
-		// 	dropDistance: 15.0,
-		// 	animations: map[int]*ebiten.Image{
-		// 		1: spritesImg.SubImage(image.Rect(2, 20, 14, 28)).(*ebiten.Image),
-		// 		2: spritesImg.SubImage(image.Rect(18, 20, 30, 28)).(*ebiten.Image),
-		// 	},
-		// },
 	}
 
 	if err := ebiten.RunGame(&game); err != nil {
