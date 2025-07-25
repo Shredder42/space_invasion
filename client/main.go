@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"image"
 	"image/color"
 	"log"
@@ -46,25 +46,16 @@ type Bullet struct {
 	*Sprite
 }
 
-func (g *Game) detectCollision(e *Enemy, b *Bullet) bool {
+func (g *Game) detectEnemyBulletCollision(e *Enemy, b *Bullet) bool {
 	if e.X < b.X+3.0 &&
 		e.X+12.0*scaleEnemy > b.X &&
 		e.Y < b.Y+6.0 &&
-		e.Y+10.0 > b.Y {
-		fmt.Printf("enemy: %+v\n", e)
+		e.Y+10.0*scaleEnemy-5.0 > b.Y {
+		// fmt.Printf("enemy: %+v\n", e)
 		return true
 	}
 	return false
 	// bullet is 3x6
-}
-
-func FindIndex[T comparable](slice []T, item T) int {
-	for i, v := range slice {
-		if v == item {
-			return i
-		}
-	}
-	return -1
 }
 
 func (g *Game) removeEnemy(target *Enemy) {
@@ -90,21 +81,21 @@ func (g *Game) removeBullet(target *Bullet) {
 func (g *Game) Update() error {
 
 	// might be best to make this fleet level (also for controlling speed and health as well)
-	hitEdge := false
+
 	bulletHits := []*Bullet{}
 	enemyHits := []*Enemy{}
 	for _, row := range g.enemyFleet {
 		for _, enemy := range row {
 			for _, bullet := range g.bullets {
-				if g.detectCollision(enemy, bullet) {
+				if g.detectEnemyBulletCollision(enemy, bullet) {
 					bulletHits = append(bulletHits, bullet)
 					enemyHits = append(enemyHits, enemy)
 				}
 			}
-			hitEdge = enemy.checkEdges()
-			if hitEdge {
-				break
-			}
+			// hitEdge = enemy.checkEdges()
+			// if hitEdge {
+			// 	break
+			// }
 		}
 	}
 
@@ -116,11 +107,28 @@ func (g *Game) Update() error {
 		g.removeEnemy(hitEnemy)
 	}
 
+	// it thinks there is constantly an edge hit seemingly when a row is completed
+	hitEdge := false
+	for _, row := range g.enemyFleet {
+		if len(row) > 0 {
+			for _, enemy := range row {
+				hitEdge = enemy.checkEdges()
+				if hitEdge {
+					break
+				}
+			}
+		}
+		if hitEdge {
+			break
+		}
+	}
+
+	// fmt.Println(hitEdge)
 	for _, row := range g.enemyFleet {
 		for _, enemy := range row {
 			enemy.Animate()
 			enemy.changeDirection(hitEdge)
-			// enemy.Move()
+			enemy.Move()
 		}
 	}
 
@@ -131,11 +139,12 @@ func (g *Game) Update() error {
 		bullet.Y -= 4
 	}
 
+	// make this a moveSpeed
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
-		g.player.X -= 2
+		g.player.X -= 4
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
-		g.player.X += 2
+		g.player.X += 4
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
