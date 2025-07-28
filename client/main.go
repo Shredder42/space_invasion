@@ -27,23 +27,17 @@ type Game struct {
 	bullets                []*Bullet
 }
 
-// may just ultimately remove the sprite stuct
-// player and enemies seem different enough to me
-type Sprite struct {
-	Img *ebiten.Image
-	X   float64
-	Y   float64
-	Dx  float64
-	Dy  float64
-}
-
 type Player struct {
-	*Sprite
+	Img       *ebiten.Image
+	X         float64
+	Y         float64
 	shootTime time.Time
 }
 
 type Bullet struct {
-	*Sprite
+	Img *ebiten.Image
+	X   float64
+	Y   float64
 }
 
 func (g *Game) detectEnemyBulletCollision(e *Enemy, b *Bullet) bool {
@@ -152,12 +146,10 @@ func (g *Game) Update() error {
 			g.player.shootTime = time.Now()
 			// make a create bullet function - make sense to make a bullets package - maybe just own file?
 			newBullet := &Bullet{
-				Sprite: &Sprite{
-					Img: ebiten.NewImage(3, 6),
-					// probably should make these dynamic if possible
-					X: g.player.X + 16,
-					Y: g.player.Y - 6,
-				},
+				Img: ebiten.NewImage(3, 6),
+				// probably should make these dynamic if possible
+				X: g.player.X + 16,
+				Y: g.player.Y - 6,
 			}
 			newBullet.Img.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
 
@@ -257,11 +249,9 @@ func main() {
 		BackgroundImg:          backgroundImg,
 		BackgroundBuildingsImg: backgroundBuildingsImg,
 		player: &Player{
-			Sprite: &Sprite{
-				Img: playerImg,
-				X:   float64(screenWidth)/2.0 - 512.0*scalePlayer/2.0,
-				Y:   float64(screenHeight) - 512.0*scalePlayer,
-			},
+			Img: playerImg,
+			X:   float64(screenWidth)/2.0 - 512.0*scalePlayer/2.0,
+			Y:   float64(screenHeight) - 512.0*scalePlayer,
 		},
 		enemyFleet: createFleet(enemy1, enemy2),
 	}
