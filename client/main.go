@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
@@ -25,6 +26,8 @@ type Game struct {
 	player                 *Player
 	enemyFleet             [][]*Enemy
 	bullets                []*Bullet
+	conn                   *websocket.Conn
+	connected              bool
 }
 
 type Player struct {
@@ -70,6 +73,20 @@ func (g *Game) removeBullet(target *Bullet) {
 			return
 		}
 	}
+}
+
+func (g *Game) connectToServer() {
+	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws", nil)
+	if err != nil {
+		log.Printf("Connection failed: %v", err)
+		return
+	}
+
+	g.conn = conn
+	g.connected = true
+	log.Println("Connected to server!")
+
+	g.conn.WriteMessage(websocket.TextMessage, []byte("Hello from client!"))
 }
 
 func (g *Game) Update() error {
@@ -164,6 +181,12 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 
+	if g.connected {
+		ebitenutil.DebugPrint(screen, "Connected to server!")
+	} else {
+		ebitenutil.DebugPrint(screen, "Not connected")
+	}
+
 	backgroundImgWidth := g.BackgroundImg.Bounds().Dx()
 	backgroundImgHeight := g.BackgroundImg.Bounds().Dy()
 
@@ -245,7 +268,7 @@ func main() {
 		2: spritesImg.SubImage(image.Rect(18, 20, 30, 28)).(*ebiten.Image),
 	}
 
-	game := Game{
+	game := &Game{
 		BackgroundImg:          backgroundImg,
 		BackgroundBuildingsImg: backgroundBuildingsImg,
 		player: &Player{
@@ -255,8 +278,9 @@ func main() {
 		},
 		enemyFleet: createFleet(enemy1, enemy2),
 	}
+	game.connectToServer()
 
-	if err := ebiten.RunGame(&game); err != nil {
+	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}
 }
