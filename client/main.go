@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Shredder42/space_invasion/shared"
 	"github.com/gorilla/websocket"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -23,15 +24,16 @@ const (
 type Game struct {
 	BackgroundImg          *ebiten.Image
 	BackgroundBuildingsImg *ebiten.Image
-	player                 *Player
+	player                 *ClientPlayer
 	enemyFleet             [][]*Enemy
 	bullets                []*Bullet
 	conn                   *websocket.Conn
 	connected              bool
 }
 
-type Player struct {
-	Img       *ebiten.Image
+type ClientPlayer struct {
+	Img *ebiten.Image
+	shared.Player
 	X         float64
 	Y         float64
 	shootTime time.Time
@@ -86,7 +88,7 @@ func (g *Game) connectToServer() {
 	g.connected = true
 	log.Println("Connected to server!")
 
-	g.conn.WriteMessage(websocket.TextMessage, []byte("Hello from client!"))
+	// g.conn.WriteMessage(websocket.TextMessage, []byte("Hello from client!"))
 }
 
 func (g *Game) Update() error {
@@ -118,7 +120,6 @@ func (g *Game) Update() error {
 		g.removeEnemy(hitEnemy)
 	}
 
-	// it thinks there is constantly an edge hit seemingly when a row is completed
 	hitEdge := false
 	for _, row := range g.enemyFleet {
 		if len(row) > 0 {
@@ -152,15 +153,17 @@ func (g *Game) Update() error {
 
 	// make this a moveSpeed
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
-		g.player.X -= 4
+		// g.player.X -= 4
+		action := shared.PlayerAction{Type: "move", Direction: "left"}
+		g.conn.WriteJSON(action)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
 		g.player.X += 4
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		if g.player.shootTime.Before(time.Now().Add(-cooldown)) {
-			g.player.shootTime = time.Now()
+		if g.player.ShootTime.Before(time.Now().Add(-cooldown)) {
+			g.player.ShootTime = time.Now()
 			// make a create bullet function - make sense to make a bullets package - maybe just own file?
 			newBullet := &Bullet{
 				Img: ebiten.NewImage(3, 6),
@@ -180,12 +183,6 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-
-	if g.connected {
-		ebitenutil.DebugPrint(screen, "Connected to server!")
-	} else {
-		ebitenutil.DebugPrint(screen, "Not connected")
-	}
 
 	backgroundImgWidth := g.BackgroundImg.Bounds().Dx()
 	backgroundImgHeight := g.BackgroundImg.Bounds().Dy()
@@ -226,6 +223,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		screen.DrawImage(bullet.Img, &opts)
 		opts.GeoM.Reset()
 	}
+
+	// if g.connected {
+	// 	ebitenutil.DebugPrint(screen, "Connected to server!")
+	// } else {
+	// 	ebitenutil.DebugPrint(screen, "Not connected")
+	// }
 
 }
 
@@ -271,7 +274,7 @@ func main() {
 	game := &Game{
 		BackgroundImg:          backgroundImg,
 		BackgroundBuildingsImg: backgroundBuildingsImg,
-		player: &Player{
+		player: &ClientPlayer{
 			Img: playerImg,
 			X:   float64(screenWidth)/2.0 - 512.0*scalePlayer/2.0,
 			Y:   float64(screenHeight) - 512.0*scalePlayer,
