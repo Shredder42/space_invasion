@@ -18,7 +18,12 @@ type PlayerAction struct {
 	Direction string `json:"direction"`
 }
 
+type GameState struct {
+	Players []Player `json:"players"`
+}
+
 type ServerMessage struct {
-	Type     string `json:"type"`
-	PlayerID string `json:"id"`
+	Type      string     `json:"type"`
+	PlayerID  string     `json:"id,omitempty"`
+	GameState *GameState `json:"game_state,omitempty"`
 }
