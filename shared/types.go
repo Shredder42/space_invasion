@@ -6,6 +6,14 @@ import (
 	// "github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
+const (
+	ScreenWidth  = 900
+	ScreenHeight = 600
+	ScalePlayer  = 1.0 / 16.0
+	ScaleEnemy   = 4.0
+	Cooldown     = 300 * time.Millisecond
+)
+
 type Player struct {
 	ID        string    `json:"id"`
 	X         float64   `json:"x"`

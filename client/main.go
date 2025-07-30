@@ -32,8 +32,8 @@ type Game struct {
 }
 
 type ClientPlayer struct {
-	Img *ebiten.Image
-	shared.Player
+	// shared.Player
+	Img       *ebiten.Image
 	X         float64
 	Y         float64
 	shootTime time.Time
@@ -90,6 +90,27 @@ func (g *Game) connectToServer() {
 
 	// g.conn.WriteMessage(websocket.TextMessage, []byte("Hello from client!"))
 }
+
+func (g *Game) listenForServerMessages() {
+	for {
+		var message shared.ServerMessage
+		err := g.conn.ReadJSON(&message)
+		if err != nil {
+			log.Printf("Client disconnected: %v", err)
+			return
+		}
+
+		switch message.Type {
+		case "player_id":
+			log.Printf(message.PlayerID)
+		case "game_state":
+			log.Printf("players: %v", message.GameState.Players)
+			// call function to update the client player
+		}
+	}
+}
+
+// update client player (create if it doesn't exist)
 
 func (g *Game) Update() error {
 
@@ -162,8 +183,8 @@ func (g *Game) Update() error {
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		if g.player.ShootTime.Before(time.Now().Add(-cooldown)) {
-			g.player.ShootTime = time.Now()
+		if g.player.shootTime.Before(time.Now().Add(-cooldown)) {
+			g.player.shootTime = time.Now()
 			// make a create bullet function - make sense to make a bullets package - maybe just own file?
 			newBullet := &Bullet{
 				Img: ebiten.NewImage(3, 6),
@@ -282,6 +303,7 @@ func main() {
 		enemyFleet: createFleet(enemy1, enemy2),
 	}
 	game.connectToServer()
+	game.listenForServerMessages()
 
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)

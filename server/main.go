@@ -28,8 +28,8 @@ func (gs *GameServer) addNewPlayer(conn *websocket.Conn) string {
 
 	newPlayer := &shared.Player{
 		ID: playerID,
-		X:  450,
-		Y:  300,
+		X:  float64(shared.ScreenWidth)/2.0 - 512.0*shared.ScalePlayer/2.0,
+		Y:  float64(shared.ScreenHeight) - 512.0*shared.ScalePlayer,
 	}
 
 	gs.players[playerID] = newPlayer
@@ -43,7 +43,30 @@ func (gs *GameServer) addNewPlayer(conn *websocket.Conn) string {
 
 	conn.WriteJSON(message)
 
+	gs.broadcastGameState()
+
 	return playerID
+}
+
+// need to remove player when disconnect
+
+func (gs *GameServer) broadcastGameState() {
+	players := make([]shared.Player, 0, len(gs.players))
+	for _, player := range gs.players {
+		players = append(players, *player)
+	}
+
+	message := shared.ServerMessage{
+		Type: "game_state",
+		GameState: &shared.GameState{
+			Players: players,
+		},
+	}
+
+	for _, conn := range gs.connections {
+		conn.WriteJSON(message)
+	}
+
 }
 
 func (gs *GameServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
