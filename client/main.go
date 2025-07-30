@@ -3,7 +3,7 @@ package main
 import (
 	// "fmt"
 	"image"
-	"image/color"
+	// "image/color"
 	"log"
 	"time"
 
@@ -24,19 +24,26 @@ const (
 type Game struct {
 	BackgroundImg          *ebiten.Image
 	BackgroundBuildingsImg *ebiten.Image
-	player                 *ClientPlayer
-	enemyFleet             [][]*Enemy
-	bullets                []*Bullet
-	conn                   *websocket.Conn
-	connected              bool
+	spaceshipImg1          *ebiten.Image
+	spaceshipImg2          *ebiten.Image
+	// player                 *ClientPlayer
+	enemyFleet [][]*Enemy
+	bullets    []*Bullet
+	conn       *websocket.Conn
+	connected  bool
+	myPlayerID string
+
+	gameState *shared.GameState
+
+	clientPlayers map[string]*ClientPlayer
 }
 
 type ClientPlayer struct {
-	// shared.Player
-	Img       *ebiten.Image
-	X         float64
-	Y         float64
-	shootTime time.Time
+	shared.Player
+	Img *ebiten.Image
+	// X         float64
+	// Y         float64
+	// shootTime time.Time
 }
 
 type Bullet struct {
@@ -103,14 +110,34 @@ func (g *Game) listenForServerMessages() {
 		switch message.Type {
 		case "player_id":
 			log.Printf(message.PlayerID)
+			g.myPlayerID = message.PlayerID
 		case "game_state":
 			log.Printf("players: %v", message.GameState.Players)
-			// call function to update the client player
+			g.updateClientPlayers(message.GameState)
 		}
 	}
 }
 
-// update client player (create if it doesn't exist)
+func (g *Game) updateClientPlayers(gameState *shared.GameState) {
+	for _, serverPlayer := range gameState.Players {
+		clientPlayer, exists := g.clientPlayers[serverPlayer.ID]
+		if !exists {
+			clientPlayerImg := g.spaceshipImg1
+			// if clientPlayer.ID == "player_2" {
+			// 	clientPlayerImg = g.spaceshipImg2
+			// }
+			clientPlayer = &ClientPlayer{
+				Player: serverPlayer,
+				Img:    clientPlayerImg,
+			}
+			g.clientPlayers[serverPlayer.ID] = clientPlayer
+			log.Printf("Created ClientPlayer for %s", serverPlayer.ID)
+		} else {
+			clientPlayer.Player = serverPlayer
+		}
+
+	}
+}
 
 func (g *Game) Update() error {
 
@@ -179,25 +206,25 @@ func (g *Game) Update() error {
 		g.conn.WriteJSON(action)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
-		g.player.X += 4
+		// g.player.X += 4
 	}
 
-	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		if g.player.shootTime.Before(time.Now().Add(-cooldown)) {
-			g.player.shootTime = time.Now()
-			// make a create bullet function - make sense to make a bullets package - maybe just own file?
-			newBullet := &Bullet{
-				Img: ebiten.NewImage(3, 6),
-				// probably should make these dynamic if possible
-				X: g.player.X + 16,
-				Y: g.player.Y - 6,
-			}
-			newBullet.Img.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
+	// if ebiten.IsKeyPressed(ebiten.KeySpace) {
+	// 	// if g.player.shootTime.Before(time.Now().Add(-cooldown)) {
+	// 	// 	g.player.shootTime = time.Now()
+	// 	// 	// make a create bullet function - make sense to make a bullets package - maybe just own file?
+	// 	// 	newBullet := &Bullet{
+	// 	// 		Img: ebiten.NewImage(3, 6),
+	// 	// 		// probably should make these dynamic if possible
+	// 	// 		X: g.player.X + 16,
+	// 	// 		Y: g.player.Y - 6,
+	// 	// 	}
+	// 		newBullet.Img.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
 
-			g.bullets = append(g.bullets, newBullet)
-			// fmt.Println(g.bullets)
-		}
-	}
+	// 		g.bullets = append(g.bullets, newBullet)
+	// 		// fmt.Println(g.bullets)
+	// 	}
+	// }
 
 	return nil
 
@@ -222,11 +249,16 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opts.GeoM.Reset()
 
-	opts.GeoM.Scale(scalePlayer, scalePlayer)
+	for _, player := range g.clientPlayers {
+		opts.GeoM.Scale(scalePlayer, scalePlayer)
+		opts.GeoM.Translate(player.X, player.Y)
+		screen.DrawImage(player.Img, &opts)
+	}
+	// opts.GeoM.Scale(scalePlayer, scalePlayer)
 
-	opts.GeoM.Translate(g.player.X, g.player.Y)
+	// opts.GeoM.Translate(g.player.X, g.player.Y)
 
-	screen.DrawImage(g.player.Img, &opts)
+	// screen.DrawImage(g.player.Img, &opts)
 
 	opts.GeoM.Reset()
 
@@ -272,7 +304,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	playerImg, _, err := ebitenutil.NewImageFromFile("assets/SpaceInvaders_white_spaceship.png")
+	playerImg1, _, err := ebitenutil.NewImageFromFile("assets/SpaceInvaders_white_spaceship.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	playerImg2, _, err := ebitenutil.NewImageFromFile("assets/SpaceInvaders_blue_spaceship.png")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -295,17 +332,20 @@ func main() {
 	game := &Game{
 		BackgroundImg:          backgroundImg,
 		BackgroundBuildingsImg: backgroundBuildingsImg,
-		player: &ClientPlayer{
-			Img: playerImg,
-			X:   float64(screenWidth)/2.0 - 512.0*scalePlayer/2.0,
-			Y:   float64(screenHeight) - 512.0*scalePlayer,
-		},
+		spaceshipImg1:          playerImg1,
+		spaceshipImg2:          playerImg2,
+		clientPlayers:          map[string]*ClientPlayer{},
+		// 	player: &ClientPlayer{
+		// 		Img: playerImg,
+		// 		X:   float64(screenWidth)/2.0 - 512.0*scalePlayer/2.0,
+		// 		Y:   float64(screenHeight) - 512.0*scalePlayer,
+		// 	},
 		enemyFleet: createFleet(enemy1, enemy2),
 	}
 	game.connectToServer()
-	game.listenForServerMessages()
-
+	go game.listenForServerMessages() // not sure if this should stay as a go routine
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}
+
 }
