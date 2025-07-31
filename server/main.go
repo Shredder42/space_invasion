@@ -25,11 +25,16 @@ type GameServer struct {
 
 func (gs *GameServer) addNewPlayer(conn *websocket.Conn) string {
 	playerID := fmt.Sprintf("player_%d", len(gs.players)+1)
+	playerLocation := 300.0
+	if playerID == "player_2" {
+		playerLocation = 600.0
+	}
 
 	newPlayer := &shared.Player{
 		ID: playerID,
-		X:  float64(shared.ScreenWidth)/2.0 - 512.0*shared.ScalePlayer/2.0,
-		Y:  float64(shared.ScreenHeight) - 512.0*shared.ScalePlayer,
+		// X:  float64(shared.ScreenWidth)/2.0 - 512.0*shared.ScalePlayer/2.0,
+		X: playerLocation,
+		Y: float64(shared.ScreenHeight) - 512.0*shared.ScalePlayer,
 	}
 
 	gs.players[playerID] = newPlayer
@@ -94,6 +99,11 @@ func (gs *GameServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		// conn.WriteMessage(messageType, message)
 
 		log.Printf("action received: %+v", action)
+		// if action.Type == "move" && action.Direction == "left" {
+		// 	gs.p
+		// set playerX to -4 or whatever
+		// broadcast the game state
+		// }
 	}
 
 }

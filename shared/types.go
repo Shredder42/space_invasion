@@ -22,6 +22,7 @@ type Player struct {
 }
 
 type PlayerAction struct {
+	ID        string `json:"id"`
 	Type      string `json:"type"`
 	Direction string `json:"direction"`
 }

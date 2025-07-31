@@ -121,11 +121,12 @@ func (g *Game) listenForServerMessages() {
 func (g *Game) updateClientPlayers(gameState *shared.GameState) {
 	for _, serverPlayer := range gameState.Players {
 		clientPlayer, exists := g.clientPlayers[serverPlayer.ID]
+
 		if !exists {
 			clientPlayerImg := g.spaceshipImg1
-			// if clientPlayer.ID == "player_2" {
-			// 	clientPlayerImg = g.spaceshipImg2
-			// }
+			if serverPlayer.ID == "player_2" {
+				clientPlayerImg = g.spaceshipImg2
+			}
 			clientPlayer = &ClientPlayer{
 				Player: serverPlayer,
 				Img:    clientPlayerImg,
@@ -135,7 +136,6 @@ func (g *Game) updateClientPlayers(gameState *shared.GameState) {
 		} else {
 			clientPlayer.Player = serverPlayer
 		}
-
 	}
 }
 
@@ -202,7 +202,7 @@ func (g *Game) Update() error {
 	// make this a moveSpeed
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 		// g.player.X -= 4
-		action := shared.PlayerAction{Type: "move", Direction: "left"}
+		action := shared.PlayerAction{ID: g.myPlayerID, Type: "move", Direction: "left"}
 		g.conn.WriteJSON(action)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
@@ -249,10 +249,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opts.GeoM.Reset()
 
-	for _, player := range g.clientPlayers {
+	for _, clientPlayer := range g.clientPlayers {
 		opts.GeoM.Scale(scalePlayer, scalePlayer)
-		opts.GeoM.Translate(player.X, player.Y)
-		screen.DrawImage(player.Img, &opts)
+		opts.GeoM.Translate(clientPlayer.X, clientPlayer.Y)
+		screen.DrawImage(clientPlayer.Img, &opts)
 	}
 	// opts.GeoM.Scale(scalePlayer, scalePlayer)
 
