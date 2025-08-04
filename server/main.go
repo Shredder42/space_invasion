@@ -98,14 +98,27 @@ func (gs *GameServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		// log.Printf("Received: %s", message)
 		// conn.WriteMessage(messageType, message)
 
-		log.Printf("action received: %+v", action)
-		// if action.Type == "move" && action.Direction == "left" {
+		// log.Printf("action received: %+v", action)
+		if action.Type == "move" {
+			movePlayer(gs.players[action.ID], action.Direction)
+		}
+		gs.broadcastGameState()
+		// && action.Direction == "left" {
 		// 	gs.p
 		// set playerX to -4 or whatever
 		// broadcast the game state
 		// }
 	}
 
+}
+
+func movePlayer(p *shared.Player, d string) {
+	if d == "left" {
+		p.X -= 4 // this could be a player speed variable
+	}
+	if d == "right" {
+		p.X += 4
+	}
 }
 
 func main() {

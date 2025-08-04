@@ -112,7 +112,7 @@ func (g *Game) listenForServerMessages() {
 			log.Printf(message.PlayerID)
 			g.myPlayerID = message.PlayerID
 		case "game_state":
-			log.Printf("players: %v", message.GameState.Players)
+			// log.Printf("players: %v", message.GameState.Players)
 			g.updateClientPlayers(message.GameState)
 		}
 	}
@@ -206,6 +206,8 @@ func (g *Game) Update() error {
 		g.conn.WriteJSON(action)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
+		action := shared.PlayerAction{ID: g.myPlayerID, Type: "move", Direction: "right"}
+		g.conn.WriteJSON(action)
 		// g.player.X += 4
 	}
 
