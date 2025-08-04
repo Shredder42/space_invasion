@@ -14,11 +14,22 @@ const (
 	Cooldown     = 300 * time.Millisecond
 )
 
+var playerSpeed = 4.0
+
 type Player struct {
 	ID        string    `json:"id"`
 	X         float64   `json:"x"`
 	Y         float64   `json:"y"`
 	ShootTime time.Time `json:"shootTime"`
+}
+
+func (p *Player) MovePlayer(d string) {
+	if d == "left" {
+		p.X -= playerSpeed // this could be a player speed variable
+	}
+	if d == "right" {
+		p.X += playerSpeed
+	}
 }
 
 type PlayerAction struct {

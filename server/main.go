@@ -100,7 +100,7 @@ func (gs *GameServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 		// log.Printf("action received: %+v", action)
 		if action.Type == "move" {
-			movePlayer(gs.players[action.ID], action.Direction)
+			gs.players[action.ID].MovePlayer(action.Direction)
 		}
 		gs.broadcastGameState()
 		// && action.Direction == "left" {
@@ -110,15 +110,6 @@ func (gs *GameServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		// }
 	}
 
-}
-
-func movePlayer(p *shared.Player, d string) {
-	if d == "left" {
-		p.X -= 4 // this could be a player speed variable
-	}
-	if d == "right" {
-		p.X += 4
-	}
 }
 
 func main() {
