@@ -3,7 +3,7 @@ package main
 import (
 	// "fmt"
 	"image"
-	// "image/color"
+	"image/color"
 	"log"
 	"time"
 
@@ -28,7 +28,7 @@ type Game struct {
 	spaceshipImg2          *ebiten.Image
 	// player                 *ClientPlayer
 	enemyFleet [][]*Enemy
-	bullets    []*Bullet
+	// bullets    []*Bullet
 	conn       *websocket.Conn
 	connected  bool
 	myPlayerID string
@@ -36,6 +36,7 @@ type Game struct {
 	gameState *shared.GameState
 
 	clientPlayers map[string]*ClientPlayer
+	clientBullets map[int]*ClientBullet
 }
 
 type ClientPlayer struct {
@@ -46,23 +47,24 @@ type ClientPlayer struct {
 	// shootTime time.Time
 }
 
-type Bullet struct {
+type ClientBullet struct {
+	shared.Bullet
 	Img *ebiten.Image
-	X   float64
-	Y   float64
+	// X   float64
+	// Y   float64
 }
 
-func (g *Game) detectEnemyBulletCollision(e *Enemy, b *Bullet) bool {
-	if e.X < b.X+3.0 &&
-		e.X+12.0*scaleEnemy > b.X &&
-		e.Y < b.Y+6.0 &&
-		e.Y+10.0*scaleEnemy-5.0 > b.Y {
-		// fmt.Printf("enemy: %+v\n", e)
-		return true
-	}
-	return false
-	// bullet is 3x6
-}
+// func (g *Game) detectEnemyBulletCollision(e *Enemy, b *Bullet) bool {
+// 	if e.X < b.X+3.0 &&
+// 		e.X+12.0*scaleEnemy > b.X &&
+// 		e.Y < b.Y+6.0 &&
+// 		e.Y+10.0*scaleEnemy-5.0 > b.Y {
+// 		// fmt.Printf("enemy: %+v\n", e)
+// 		return true
+// 	}
+// 	return false
+// 	// bullet is 3x6
+// }
 
 func (g *Game) removeEnemy(target *Enemy) {
 	for rowIndex, row := range g.enemyFleet {
@@ -75,14 +77,14 @@ func (g *Game) removeEnemy(target *Enemy) {
 	}
 }
 
-func (g *Game) removeBullet(target *Bullet) {
-	for index, bullet := range g.bullets {
-		if bullet == target {
-			g.bullets = append(g.bullets[:index], g.bullets[index+1:]...)
-			return
-		}
-	}
-}
+// func (g *Game) removeBullet(target *Bullet) {
+// 	for index, bullet := range g.bullets {
+// 		if bullet == target {
+// 			g.bullets = append(g.bullets[:index], g.bullets[index+1:]...)
+// 			return
+// 		}
+// 	}
+// }
 
 func (g *Game) connectToServer() {
 	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws", nil)
@@ -142,36 +144,50 @@ func (g *Game) updateClientPlayers(gameState *shared.GameState) {
 
 func (g *Game) updateBullets(gameState *shared.GameState) {
 	log.Printf("Bullets shot: %d", len(gameState.Bullets))
+	for _, serverBullet := range gameState.Bullets {
+		clientBullet, exists := g.clientBullets[serverBullet.ID]
+
+		if !exists {
+			clientBullet = &ClientBullet{
+				Bullet: serverBullet,
+				Img:    ebiten.NewImage(3, 6),
+			}
+			clientBullet.Img.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
+			g.clientBullets[clientBullet.ID] = clientBullet
+		} else {
+			clientBullet.Bullet = serverBullet
+		}
+	}
 }
 
 func (g *Game) Update() error {
 
 	// might be best to make this fleet level (also for controlling speed and health as well)
 
-	bulletHits := []*Bullet{}
-	enemyHits := []*Enemy{}
-	for _, row := range g.enemyFleet {
-		for _, enemy := range row {
-			for _, bullet := range g.bullets {
-				if g.detectEnemyBulletCollision(enemy, bullet) {
-					bulletHits = append(bulletHits, bullet)
-					enemyHits = append(enemyHits, enemy)
-				}
-			}
-			// hitEdge = enemy.checkEdges()
-			// if hitEdge {
-			// 	break
-			// }
-		}
-	}
+	// bulletHits := []*Bullet{}
+	// enemyHits := []*Enemy{}
+	// for _, row := range g.enemyFleet {
+	// 	for _, enemy := range row {
+	// 		for _, bullet := range g.bullets {
+	// 			if g.detectEnemyBulletCollision(enemy, bullet) {
+	// 				bulletHits = append(bulletHits, bullet)
+	// 				enemyHits = append(enemyHits, enemy)
+	// 			}
+	// 		}
+	// hitEdge = enemy.checkEdges()
+	// if hitEdge {
+	// 	break
+	// }
+	// 	}
+	// }
 
-	for _, bullet := range bulletHits {
-		g.removeBullet(bullet)
-	}
+	// for _, bullet := range bulletHits {
+	// 	g.removeBullet(bullet)
+	// }
 
-	for _, hitEnemy := range enemyHits {
-		g.removeEnemy(hitEnemy)
-	}
+	// for _, hitEnemy := range enemyHits {
+	// 	g.removeEnemy(hitEnemy)
+	// }
 
 	hitEdge := false
 	for _, row := range g.enemyFleet {
@@ -197,12 +213,12 @@ func (g *Game) Update() error {
 		}
 	}
 
-	for _, bullet := range g.bullets {
-		if bullet.Y < -4 {
-			g.removeBullet(bullet)
-		}
-		bullet.Y -= 4
-	}
+	// for _, bullet := range g.bullets {
+	// 	if bullet.Y < -4 {
+	// 		g.removeBullet(bullet)
+	// 	}
+	// 	bullet.Y -= 4
+	// }
 
 	// make this a moveSpeed
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
@@ -281,9 +297,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	for _, bullet := range g.bullets {
-		opts.GeoM.Translate(bullet.X, bullet.Y)
-		screen.DrawImage(bullet.Img, &opts)
+	for _, clientBullet := range g.clientBullets {
+		opts.GeoM.Translate(clientBullet.X, clientBullet.Y)
+		screen.DrawImage(clientBullet.Img, &opts)
 		opts.GeoM.Reset()
 	}
 
@@ -345,6 +361,7 @@ func main() {
 		spaceshipImg1:          playerImg1,
 		spaceshipImg2:          playerImg2,
 		clientPlayers:          map[string]*ClientPlayer{},
+		clientBullets:          map[int]*ClientBullet{},
 		// 	player: &ClientPlayer{
 		// 		Img: playerImg,
 		// 		X:   float64(screenWidth)/2.0 - 512.0*scalePlayer/2.0,

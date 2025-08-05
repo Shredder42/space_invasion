@@ -20,7 +20,7 @@ var upgrader = websocket.Upgrader{
 
 type GameServer struct {
 	players      map[string]*shared.Player
-	bullets      []*shared.Bullet
+	bullets      map[int]*shared.Bullet
 	connections  map[string]*websocket.Conn
 	connToPlayer map[*websocket.Conn]string
 }
@@ -58,12 +58,15 @@ func (gs *GameServer) addNewPlayer(conn *websocket.Conn) string {
 func (gs *GameServer) shoot(playerID string) {
 	if gs.players[playerID].ShootTime.Before(time.Now().Add(-shared.Cooldown)) {
 		gs.players[playerID].ShootTime = time.Now()
+		shared.BulletID += 1
 		newBullet := &shared.Bullet{
-			X: int(gs.players[playerID].X + 16.0), // probably should make these dynamic if possible
-			Y: int(gs.players[playerID].Y - 6.0),  // probably should make these dynamic if possible
+			ID:       shared.BulletID,
+			PlayerID: playerID,
+			X:        gs.players[playerID].X + 16.0, // probably should make these dynamic if possible
+			Y:        gs.players[playerID].Y - 6.0,  // probably should make these dynamic if possible
 		}
 
-		gs.bullets = append(gs.bullets, newBullet)
+		gs.bullets[shared.BulletID] = newBullet
 
 	}
 }
@@ -142,6 +145,7 @@ func main() {
 		players:      map[string]*shared.Player{},
 		connections:  map[string]*websocket.Conn{},
 		connToPlayer: map[*websocket.Conn]string{},
+		bullets:      map[int]*shared.Bullet{},
 	}
 
 	http.HandleFunc("/ws", gameServer.handleWebSocket)

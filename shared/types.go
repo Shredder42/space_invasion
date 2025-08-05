@@ -32,14 +32,13 @@ func (p *Player) MovePlayer(d string) {
 	}
 }
 
-func (p Player) Shoot() {
-	// creates a bullet
-}
+var BulletID = 0
 
 type Bullet struct {
-	ID string `json:"id"`
-	X  int    `json:"x"`
-	Y  int    `json:"y"`
+	ID       int     `json:"id"`
+	PlayerID string  `json:"player_id"`
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
 }
 
 type PlayerAction struct {
