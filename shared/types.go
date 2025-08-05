@@ -32,14 +32,25 @@ func (p *Player) MovePlayer(d string) {
 	}
 }
 
+func (p Player) Shoot() {
+	// creates a bullet
+}
+
+type Bullet struct {
+	ID string `json:"id"`
+	X  int    `json:"x"`
+	Y  int    `json:"y"`
+}
+
 type PlayerAction struct {
 	ID        string `json:"id"`
 	Type      string `json:"type"`
-	Direction string `json:"direction"`
+	Direction string `json:"direction,omitempty"`
 }
 
 type GameState struct {
 	Players []Player `json:"players"`
+	Bullets []Bullet `json:"bullets"`
 }
 
 type ServerMessage struct {

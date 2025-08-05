@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/Shredder42/space_invasion/shared"
 	"github.com/gorilla/websocket"
@@ -19,6 +20,7 @@ var upgrader = websocket.Upgrader{
 
 type GameServer struct {
 	players      map[string]*shared.Player
+	bullets      []*shared.Bullet
 	connections  map[string]*websocket.Conn
 	connToPlayer map[*websocket.Conn]string
 }
@@ -53,6 +55,19 @@ func (gs *GameServer) addNewPlayer(conn *websocket.Conn) string {
 	return playerID
 }
 
+func (gs *GameServer) shoot(playerID string) {
+	if gs.players[playerID].ShootTime.Before(time.Now().Add(-shared.Cooldown)) {
+		gs.players[playerID].ShootTime = time.Now()
+		newBullet := &shared.Bullet{
+			X: int(gs.players[playerID].X + 16.0), // probably should make these dynamic if possible
+			Y: int(gs.players[playerID].Y - 6.0),  // probably should make these dynamic if possible
+		}
+
+		gs.bullets = append(gs.bullets, newBullet)
+
+	}
+}
+
 // need to remove player when disconnect
 
 func (gs *GameServer) broadcastGameState() {
@@ -61,10 +76,16 @@ func (gs *GameServer) broadcastGameState() {
 		players = append(players, *player)
 	}
 
+	bullets := make([]shared.Bullet, 0, len(gs.bullets))
+	for _, bullet := range gs.bullets {
+		bullets = append(bullets, *bullet)
+	}
+
 	message := shared.ServerMessage{
 		Type: "game_state",
 		GameState: &shared.GameState{
 			Players: players,
+			Bullets: bullets,
 		},
 	}
 
@@ -101,6 +122,10 @@ func (gs *GameServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		// log.Printf("action received: %+v", action)
 		if action.Type == "move" {
 			gs.players[action.ID].MovePlayer(action.Direction)
+		}
+		if action.Type == "shoot" {
+			log.Printf("action received: %+v", action)
+			gs.shoot(action.ID)
 		}
 		gs.broadcastGameState()
 		// && action.Direction == "left" {

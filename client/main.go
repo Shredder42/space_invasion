@@ -114,6 +114,7 @@ func (g *Game) listenForServerMessages() {
 		case "game_state":
 			// log.Printf("players: %v", message.GameState.Players)
 			g.updateClientPlayers(message.GameState)
+			g.updateBullets(message.GameState)
 		}
 	}
 }
@@ -137,6 +138,10 @@ func (g *Game) updateClientPlayers(gameState *shared.GameState) {
 			clientPlayer.Player = serverPlayer
 		}
 	}
+}
+
+func (g *Game) updateBullets(gameState *shared.GameState) {
+	log.Printf("Bullets shot: %d", len(gameState.Bullets))
 }
 
 func (g *Game) Update() error {
@@ -201,14 +206,17 @@ func (g *Game) Update() error {
 
 	// make this a moveSpeed
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
-		// g.player.X -= 4
 		action := shared.PlayerAction{ID: g.myPlayerID, Type: "move", Direction: "left"}
 		g.conn.WriteJSON(action)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
 		action := shared.PlayerAction{ID: g.myPlayerID, Type: "move", Direction: "right"}
 		g.conn.WriteJSON(action)
-		// g.player.X += 4
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeySpace) {
+		action := shared.PlayerAction{ID: g.myPlayerID, Type: "shoot"}
+		g.conn.WriteJSON(action)
 	}
 
 	// if ebiten.IsKeyPressed(ebiten.KeySpace) {
