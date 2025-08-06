@@ -71,6 +71,19 @@ func (gs *GameServer) shoot(playerID string) {
 	}
 }
 
+func (gs *GameServer) updateBullets() {
+	deltaTime := 1.0 / 60.0 // 60 FPS
+
+	for bulletID, bullet := range gs.bullets {
+		bullet.Y -= 4.0 * deltaTime
+
+		if bullet.Y < -4.0 {
+			delete(gs.bullets, bulletID)
+			log.Printf("Bullet %d removed (off screen)", bulletID)
+		}
+	}
+}
+
 // need to remove player when disconnect
 
 func (gs *GameServer) broadcastGameState() {
