@@ -23,6 +23,7 @@ type GameServer struct {
 	bullets      map[int]*shared.Bullet
 	connections  map[string]*websocket.Conn
 	connToPlayer map[*websocket.Conn]string
+	running      bool
 }
 
 func (gs *GameServer) addNewPlayer(conn *websocket.Conn) string {
@@ -72,16 +73,31 @@ func (gs *GameServer) shoot(playerID string) {
 }
 
 func (gs *GameServer) updateBullets() {
-	deltaTime := 1.0 / 60.0 // 60 FPS
+	// deltaTime := 1.0 / 60.0 // 60 FPS
+	var bulletsToDelete []int
 
 	for bulletID, bullet := range gs.bullets {
-		bullet.Y -= 4.0 * deltaTime
+		bullet.Y -= 4.0 //* deltaTime
+		// log.Printf("bullets in gs.bullets: %d", len(gs.bullets))
+		// log.Printf("bullets: %v", gs.bullets)
 
-		if bullet.Y < -4.0 {
-			delete(gs.bullets, bulletID)
-			log.Printf("Bullet %d removed (off screen)", bulletID)
+		if bullet.Y < 100.0 {
+			bulletsToDelete = append(bulletsToDelete, bulletID)
+
+			// this isn't deleting all bullets
+			// collect ids to delete in separate slice first
 		}
+
+		// log.Printf("bullet %v Y: %v", bulletID, bullet.Y)
+		// log.Printf("bullets in gs.bullets: %d", len(gs.bullets))
 	}
+
+	for _, bulletID := range bulletsToDelete {
+		delete(gs.bullets, bulletID)
+		log.Printf("Bullet %d removed (off screen)", bulletID)
+	}
+
+	log.Printf("bullets in gs.bullets: %d", len(gs.bullets))
 }
 
 // need to remove player when disconnect
@@ -143,7 +159,7 @@ func (gs *GameServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			log.Printf("action received: %+v", action)
 			gs.shoot(action.ID)
 		}
-		gs.broadcastGameState()
+		// gs.broadcastGameState()
 		// && action.Direction == "left" {
 		// 	gs.p
 		// set playerX to -4 or whatever
@@ -153,6 +169,22 @@ func (gs *GameServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (gs *GameServer) startGameLoop() {
+	gs.running = true
+	ticker := time.NewTicker(16 * time.Millisecond) // ~60 FPS
+	defer ticker.Stop()
+
+	log.Println("Game loop started")
+
+	for gs.running {
+		select {
+		case <-ticker.C:
+			gs.updateBullets()
+			gs.broadcastGameState()
+		}
+	}
+}
+
 func main() {
 	gameServer := &GameServer{
 		players:      map[string]*shared.Player{},
@@ -160,6 +192,8 @@ func main() {
 		connToPlayer: map[*websocket.Conn]string{},
 		bullets:      map[int]*shared.Bullet{},
 	}
+
+	go gameServer.startGameLoop()
 
 	http.HandleFunc("/ws", gameServer.handleWebSocket)
 

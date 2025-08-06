@@ -143,7 +143,7 @@ func (g *Game) updateClientPlayers(gameState *shared.GameState) {
 }
 
 func (g *Game) updateBullets(gameState *shared.GameState) {
-	log.Printf("Bullets shot: %d", len(gameState.Bullets))
+	// log.Printf("Bullets shot: %d", len(gameState.Bullets))
 	for _, serverBullet := range gameState.Bullets {
 		clientBullet, exists := g.clientBullets[serverBullet.ID]
 
@@ -154,10 +154,28 @@ func (g *Game) updateBullets(gameState *shared.GameState) {
 			}
 			clientBullet.Img.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
 			g.clientBullets[clientBullet.ID] = clientBullet
+
 		} else {
 			clientBullet.Bullet = serverBullet
+			// log.Printf("bullet y: %v", clientBullet.Y)
 		}
 	}
+
+	if len(gameState.Bullets) >= 1 {
+		existingBullets := map[int]struct{}{}
+		for _, bullet := range gameState.Bullets {
+			existingBullets[bullet.ID] = struct{}{}
+		}
+		for id := range g.clientBullets {
+			if _, ok := existingBullets[id]; !ok {
+				delete(g.clientBullets, id)
+			}
+		}
+	} else {
+		g.clientBullets = map[int]*ClientBullet{}
+	}
+
+	log.Printf("length of client bullets %d", len(g.clientBullets))
 }
 
 func (g *Game) Update() error {
@@ -279,14 +297,13 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		opts.GeoM.Scale(scalePlayer, scalePlayer)
 		opts.GeoM.Translate(clientPlayer.X, clientPlayer.Y)
 		screen.DrawImage(clientPlayer.Img, &opts)
+		opts.GeoM.Reset()
 	}
 	// opts.GeoM.Scale(scalePlayer, scalePlayer)
 
 	// opts.GeoM.Translate(g.player.X, g.player.Y)
 
 	// screen.DrawImage(g.player.Img, &opts)
-
-	opts.GeoM.Reset()
 
 	for _, row := range g.enemyFleet {
 		for _, enemy := range row {
