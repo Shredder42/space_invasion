@@ -41,6 +41,13 @@ type Bullet struct {
 	Y        float64 `json:"y"`
 }
 
+type Enemy struct {
+	X            float64
+	Y            float64
+	Health       int
+	DropDistance float64
+}
+
 type PlayerAction struct {
 	ID        string `json:"id"`
 	Type      string `json:"type"`
@@ -48,8 +55,9 @@ type PlayerAction struct {
 }
 
 type GameState struct {
-	Players []Player `json:"players"`
-	Bullets []Bullet `json:"bullets"`
+	Players []Player  `json:"players"`
+	Bullets []Bullet  `json:"bullets"`
+	Enemies [][]Enemy `json:"enemies"`
 }
 
 type ServerMessage struct {

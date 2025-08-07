@@ -20,9 +20,10 @@ var upgrader = websocket.Upgrader{
 
 type GameServer struct {
 	players      map[string]*shared.Player
-	bullets      map[int]*shared.Bullet
 	connections  map[string]*websocket.Conn
 	connToPlayer map[*websocket.Conn]string
+	bullets      map[int]*shared.Bullet
+	enemies      [][]*shared.Enemy
 	running      bool
 }
 
@@ -78,18 +79,10 @@ func (gs *GameServer) updateBullets() {
 
 	for bulletID, bullet := range gs.bullets {
 		bullet.Y -= 4.0 //* deltaTime
-		// log.Printf("bullets in gs.bullets: %d", len(gs.bullets))
-		// log.Printf("bullets: %v", gs.bullets)
 
-		if bullet.Y < 100.0 {
+		if bullet.Y < -6.0 {
 			bulletsToDelete = append(bulletsToDelete, bulletID)
-
-			// this isn't deleting all bullets
-			// collect ids to delete in separate slice first
 		}
-
-		// log.Printf("bullet %v Y: %v", bulletID, bullet.Y)
-		// log.Printf("bullets in gs.bullets: %d", len(gs.bullets))
 	}
 
 	for _, bulletID := range bulletsToDelete {
@@ -97,7 +90,7 @@ func (gs *GameServer) updateBullets() {
 		log.Printf("Bullet %d removed (off screen)", bulletID)
 	}
 
-	log.Printf("bullets in gs.bullets: %d", len(gs.bullets))
+	// log.Printf("bullets in gs.bullets: %d", len(gs.bullets))
 }
 
 // need to remove player when disconnect
@@ -113,11 +106,24 @@ func (gs *GameServer) broadcastGameState() {
 		bullets = append(bullets, *bullet)
 	}
 
+	enemies := make([][]shared.Enemy, 0, len(gs.enemies))
+	for _, row := range gs.enemies {
+		// enemies = append(enemies, row)
+		enemyRow := []shared.Enemy{}
+		for _, enemy := range row {
+			enemyRow = append(enemyRow, *enemy)
+		}
+		enemies = append(enemies, enemyRow)
+		// 		enemies = append(enemies, *enemy)
+		// 	}
+	}
+
 	message := shared.ServerMessage{
 		Type: "game_state",
 		GameState: &shared.GameState{
 			Players: players,
 			Bullets: bullets,
+			Enemies: enemies,
 		},
 	}
 
@@ -185,12 +191,46 @@ func (gs *GameServer) startGameLoop() {
 	}
 }
 
+func createFleet() [][]*shared.Enemy {
+	availableSpaceX := shared.ScreenWidth - (2 * 12.0 * shared.ScaleEnemy) // may want to put in dynamic enemy width
+	numberEnemiesX := int(availableSpaceX / (2 * 12.0 * shared.ScaleEnemy))
+
+	enemyFleet := [][]*shared.Enemy{}
+	for i := 0; i < 4; i++ {
+		enemyRow := []*shared.Enemy{}
+		// animation := enemy1
+		xOffset := 0.0
+		// if i%2 == 1 {
+		// 	animation = enemy2
+		// 	xOffset = 3.0
+		// }
+		for j := 0; j < numberEnemiesX; j++ {
+			enemyRow = append(enemyRow, &shared.Enemy{
+				X: 12.0*shared.ScaleEnemy + 2*12.0*shared.ScaleEnemy*float64(j) + xOffset,
+				Y: 25.0 + 50*float64(i),
+				// width:        12.0 * shared.scaleEnemy,
+				// speedInTps:   20,
+				// frameCounter: 20,
+				// Health:       1,
+				// frame:        1,
+				// speed:        1.0,
+				DropDistance: 15.0,
+				// animations:   animation,
+			})
+		}
+		enemyFleet = append(enemyFleet, enemyRow)
+	}
+
+	return enemyFleet
+}
+
 func main() {
 	gameServer := &GameServer{
 		players:      map[string]*shared.Player{},
 		connections:  map[string]*websocket.Conn{},
 		connToPlayer: map[*websocket.Conn]string{},
 		bullets:      map[int]*shared.Bullet{},
+		enemies:      createFleet(),
 	}
 
 	go gameServer.startGameLoop()

@@ -117,6 +117,7 @@ func (g *Game) listenForServerMessages() {
 			// log.Printf("players: %v", message.GameState.Players)
 			g.updateClientPlayers(message.GameState)
 			g.updateBullets(message.GameState)
+			log.Printf("enemies: %v", message.GameState.Enemies)
 		}
 	}
 }
@@ -175,7 +176,7 @@ func (g *Game) updateBullets(gameState *shared.GameState) {
 		g.clientBullets = map[int]*ClientBullet{}
 	}
 
-	log.Printf("length of client bullets %d", len(g.clientBullets))
+	// log.Printf("length of client bullets %d", len(g.clientBullets))
 }
 
 func (g *Game) Update() error {
