@@ -26,6 +26,7 @@ type Game struct {
 	BackgroundBuildingsImg *ebiten.Image
 	spaceshipImg1          *ebiten.Image
 	spaceshipImg2          *ebiten.Image
+	clientEnemyImg1        *ebiten.Image
 	// player                 *ClientPlayer
 	enemyFleet [][]*Enemy
 	// bullets    []*Bullet
@@ -35,8 +36,9 @@ type Game struct {
 
 	gameState *shared.GameState
 
-	clientPlayers map[string]*ClientPlayer
-	clientBullets map[int]*ClientBullet
+	clientPlayers    map[string]*ClientPlayer
+	clientBullets    map[int]*ClientBullet
+	clientEnemyFleet [][]*ClientEnemy
 }
 
 type ClientPlayer struct {
@@ -52,6 +54,11 @@ type ClientBullet struct {
 	Img *ebiten.Image
 	// X   float64
 	// Y   float64
+}
+
+type ClientEnemy struct {
+	shared.Enemy
+	Img *ebiten.Image
 }
 
 // func (g *Game) detectEnemyBulletCollision(e *Enemy, b *Bullet) bool {
@@ -117,7 +124,8 @@ func (g *Game) listenForServerMessages() {
 			// log.Printf("players: %v", message.GameState.Players)
 			g.updateClientPlayers(message.GameState)
 			g.updateBullets(message.GameState)
-			log.Printf("enemies: %v", message.GameState.Enemies)
+			g.updateEnemies(message.GameState)
+			// log.Printf("enemies: %v", message.GameState.Enemies)
 		}
 	}
 }
@@ -162,6 +170,7 @@ func (g *Game) updateBullets(gameState *shared.GameState) {
 		}
 	}
 
+	// remove client bullets that are no longer in the server bullets
 	if len(gameState.Bullets) >= 1 {
 		existingBullets := map[int]struct{}{}
 		for _, bullet := range gameState.Bullets {
@@ -177,6 +186,19 @@ func (g *Game) updateBullets(gameState *shared.GameState) {
 	}
 
 	// log.Printf("length of client bullets %d", len(g.clientBullets))
+}
+
+func (g *Game) updateEnemies(gameState *shared.GameState) {
+	for _, row := range gameState.Enemies {
+		enemyRow := []*ClientEnemy{}
+		for _, serverEnemy := range row {
+			enemyRow = append(enemyRow, &ClientEnemy{
+				Enemy: serverEnemy,
+				Img:   g.clientEnemyImg1,
+			})
+		}
+		g.clientEnemyFleet = append(g.clientEnemyFleet, enemyRow)
+	}
 }
 
 func (g *Game) Update() error {
@@ -306,11 +328,20 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	// screen.DrawImage(g.player.Img, &opts)
 
-	for _, row := range g.enemyFleet {
+	// for _, row := range g.enemyFleet {
+	// 	for _, enemy := range row {
+	// 		opts.GeoM.Scale(scaleEnemy, scaleEnemy)
+	// 		opts.GeoM.Translate(enemy.X, enemy.Y)
+	// 		screen.DrawImage(enemy.animations[enemy.frame], &opts)
+	// 		opts.GeoM.Reset()
+	// 	}
+	// }
+
+	for _, row := range g.clientEnemyFleet {
 		for _, enemy := range row {
-			opts.GeoM.Scale(scaleEnemy, scaleEnemy)
+			opts.GeoM.Scale(shared.ScaleEnemy, shared.ScaleEnemy)
 			opts.GeoM.Translate(enemy.X, enemy.Y)
-			screen.DrawImage(enemy.animations[enemy.frame], &opts)
+			screen.DrawImage(enemy.Img, &opts)
 			opts.GeoM.Reset()
 		}
 	}
@@ -373,13 +404,17 @@ func main() {
 		2: spritesImg.SubImage(image.Rect(18, 20, 30, 28)).(*ebiten.Image),
 	}
 
+	clientEnemyImg1 := spritesImg.SubImage(image.Rect(2, 4, 14, 14)).(*ebiten.Image)
+
 	game := &Game{
 		BackgroundImg:          backgroundImg,
 		BackgroundBuildingsImg: backgroundBuildingsImg,
 		spaceshipImg1:          playerImg1,
 		spaceshipImg2:          playerImg2,
+		clientEnemyImg1:        clientEnemyImg1,
 		clientPlayers:          map[string]*ClientPlayer{},
 		clientBullets:          map[int]*ClientBullet{},
+		clientEnemyFleet:       [][]*ClientEnemy{},
 		// 	player: &ClientPlayer{
 		// 		Img: playerImg,
 		// 		X:   float64(screenWidth)/2.0 - 512.0*scalePlayer/2.0,
