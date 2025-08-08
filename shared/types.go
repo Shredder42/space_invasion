@@ -42,11 +42,27 @@ type Bullet struct {
 }
 
 type Enemy struct {
+	ID           string
 	X            float64
 	Y            float64
 	Health       int
 	DropDistance float64
+	// FrameCounter   int
+	// Frame          int
+	// AnimationSpeed int
 }
+
+// func (e *Enemy) Animate() {
+// 	e.FrameCounter -= 1
+// 	if e.FrameCounter == 0 {
+// 		e.FrameCounter = e.AnimationSpeed
+// 		if e.Frame == 1 {
+// 			e.Frame = 2
+// 		} else {
+// 			e.Frame = 1
+// 		}
+// 	}
+// }
 
 type PlayerAction struct {
 	ID        string `json:"id"`

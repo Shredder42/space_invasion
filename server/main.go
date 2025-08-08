@@ -93,6 +93,14 @@ func (gs *GameServer) updateBullets() {
 	// log.Printf("bullets in gs.bullets: %d", len(gs.bullets))
 }
 
+// func (gs *GameServer) updateEnemies() {
+// 	for _, row := range gs.enemies {
+// 		for _, enemy := range row {
+// 			enemy.Animate()
+// 		}
+// 	}
+// }
+
 // need to remove player when disconnect
 
 func (gs *GameServer) broadcastGameState() {
@@ -185,6 +193,7 @@ func (gs *GameServer) startGameLoop() {
 	for gs.running {
 		select {
 		case <-ticker.C:
+			// gs.updateEnemies()
 			gs.updateBullets()
 			gs.broadcastGameState()
 		}
@@ -206,15 +215,16 @@ func createFleet() [][]*shared.Enemy {
 		// }
 		for j := 0; j < numberEnemiesX; j++ {
 			enemyRow = append(enemyRow, &shared.Enemy{
-				X: 12.0*shared.ScaleEnemy + 2*12.0*shared.ScaleEnemy*float64(j) + xOffset,
-				Y: 25.0 + 50*float64(i),
-				// width:        12.0 * shared.scaleEnemy,
-				// speedInTps:   20,
-				// frameCounter: 20,
-				// Health:       1,
-				// frame:        1,
-				// speed:        1.0,
+				ID:           string(i) + "_" + string(j),
+				X:            12.0*shared.ScaleEnemy + 2*12.0*shared.ScaleEnemy*float64(j) + xOffset,
+				Y:            25.0 + 50*float64(i),
+				Health:       1,
 				DropDistance: 15.0,
+				// FrameCounter:   20,
+				// Frame:          1,
+				// AnimationSpeed: 20,
+				// width:        12.0 * shared.scaleEnemy,
+				// speed:        1.0,
 				// animations:   animation,
 			})
 		}
