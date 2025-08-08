@@ -114,14 +114,13 @@ func (gs *GameServer) broadcastGameState() {
 		bullets = append(bullets, *bullet)
 	}
 
-	enemies := make([][]shared.Enemy, 0, len(gs.enemies))
+	enemies := make([]shared.Enemy, 0, len(gs.enemies))
 	for _, row := range gs.enemies {
 		// enemies = append(enemies, row)
-		enemyRow := []shared.Enemy{}
 		for _, enemy := range row {
-			enemyRow = append(enemyRow, *enemy)
+			enemies = append(enemies, *enemy)
 		}
-		enemies = append(enemies, enemyRow)
+
 		// 		enemies = append(enemies, *enemy)
 		// 	}
 	}

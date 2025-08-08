@@ -71,9 +71,9 @@ type PlayerAction struct {
 }
 
 type GameState struct {
-	Players []Player  `json:"players"`
-	Bullets []Bullet  `json:"bullets"`
-	Enemies [][]Enemy `json:"enemies"`
+	Players []Player `json:"players"`
+	Bullets []Bullet `json:"bullets"`
+	Enemies []Enemy  `json:"enemies"`
 }
 
 type ServerMessage struct {

@@ -39,7 +39,7 @@ type Game struct {
 
 	clientPlayers    map[string]*ClientPlayer
 	clientBullets    map[int]*ClientBullet
-	clientEnemyFleet [][]*ClientEnemy
+	clientEnemyFleet map[string]*ClientEnemy
 }
 
 type ClientPlayer struct {
@@ -64,6 +64,18 @@ type ClientEnemy struct {
 	Frame          int
 	AnimationSpeed int
 	Animations     map[int]*ebiten.Image
+}
+
+func (ce *ClientEnemy) Animate() {
+	ce.FrameCounter -= 1
+	if ce.FrameCounter == 0 {
+		ce.FrameCounter = ce.AnimationSpeed
+		if ce.Frame == 1 {
+			ce.Frame = 2
+		} else {
+			ce.Frame = 1
+		}
+	}
 }
 
 // func (g *Game) detectEnemyBulletCollision(e *Enemy, b *Bullet) bool {
@@ -130,7 +142,7 @@ func (g *Game) listenForServerMessages() {
 			g.updateClientPlayers(message.GameState)
 			g.updateBullets(message.GameState)
 			g.updateEnemies(message.GameState)
-			log.Printf("enemies frame: %v", message.GameState.Enemies[0][0].Frame)
+			// log.Printf("enemies frame: %v", message.GameState.Enemies[0][0].Frame)
 		}
 	}
 }
@@ -195,28 +207,21 @@ func (g *Game) updateBullets(gameState *shared.GameState) {
 
 func (g *Game) updateEnemies(gameState *shared.GameState) {
 	// log.Printf("enemy frame: %d", gameState.Enemies[0][0].Frame)
-	if len(g.clientEnemyFleet) == 0 {
-		for _, row := range gameState.Enemies {
-			enemyRow := []*ClientEnemy{}
-			for _, serverEnemy := range row {
-				enemyRow = append(enemyRow, &ClientEnemy{
-					Enemy: serverEnemy,
-					// Img:   g.clientEnemyImg1,
-					FrameCounter:   20,
-					Frame:          1,
-					AnimationSpeed: 20,
-					Animations:     g.Enemy1Imgs,
-				})
+	for _, serverEnemy := range gameState.Enemies {
+		clientEnemy, exists := g.clientEnemyFleet[serverEnemy.ID]
+
+		if !exists {
+			clientEnemy := &ClientEnemy{
+				Enemy:          serverEnemy,
+				FrameCounter:   20,
+				Frame:          1,
+				AnimationSpeed: 20,
+				Animations:     g.Enemy1Imgs,
 			}
-			g.clientEnemyFleet = append(g.clientEnemyFleet, enemyRow)
+			g.clientEnemyFleet[serverEnemy.ID] = clientEnemy
+		} else {
+			clientEnemy.Enemy = serverEnemy
 		}
-	} else {
-		for _, row := range g.enemyFleet {
-			for _, enemy := range row {
-				clientEnemy.Enemy = gameState.Enemy
-			}
-		}
-		log.Printf("enemy frame: %d", g.clientEnemyFleet[0][0].Frame)
 	}
 }
 
@@ -265,12 +270,16 @@ func (g *Game) Update() error {
 	}
 
 	// fmt.Println(hitEdge)
-	for _, row := range g.enemyFleet {
-		for _, enemy := range row {
-			enemy.Animate()
-			enemy.changeDirection(hitEdge)
-			enemy.Move()
-		}
+	// for _, row := range g.enemyFleet {
+	// 	for _, enemy := range row {
+	// 		enemy.Animate()
+	// 		enemy.changeDirection(hitEdge)
+	// 		enemy.Move()
+	// 	}
+	// }
+
+	for _, enemy := range g.clientEnemyFleet {
+		enemy.Animate()
 	}
 
 	// for _, bullet := range g.bullets {
@@ -356,13 +365,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// 	}
 	// }
 
-	for _, row := range g.clientEnemyFleet {
-		for _, enemy := range row {
-			opts.GeoM.Scale(shared.ScaleEnemy, shared.ScaleEnemy)
-			opts.GeoM.Translate(enemy.X, enemy.Y)
-			screen.DrawImage(enemy.Animations[enemy.Frame], &opts)
-			opts.GeoM.Reset()
-		}
+	for _, clientEnemy := range g.clientEnemyFleet {
+		opts.GeoM.Scale(shared.ScaleEnemy, shared.ScaleEnemy)
+		opts.GeoM.Translate(clientEnemy.X, clientEnemy.Y)
+		screen.DrawImage(clientEnemy.Animations[clientEnemy.Frame], &opts)
+		opts.GeoM.Reset()
 	}
 
 	for _, clientBullet := range g.clientBullets {
@@ -434,7 +441,7 @@ func main() {
 		Enemy1Imgs:       enemy1,
 		clientPlayers:    map[string]*ClientPlayer{},
 		clientBullets:    map[int]*ClientBullet{},
-		clientEnemyFleet: [][]*ClientEnemy{},
+		clientEnemyFleet: map[string]*ClientEnemy{},
 		// 	player: &ClientPlayer{
 		// 		Img: playerImg,
 		// 		X:   float64(screenWidth)/2.0 - 512.0*scalePlayer/2.0,
