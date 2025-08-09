@@ -48,6 +48,7 @@ type Enemy struct {
 	Health       int
 	Speed        float64
 	DropDistance float64
+	Width        float64
 	// FrameCounter   int
 	// Frame          int
 	// AnimationSpeed int
@@ -55,6 +56,21 @@ type Enemy struct {
 
 func (e *Enemy) Move() {
 	e.X += e.Speed
+}
+
+func (e Enemy) CheckEdges() bool {
+	if e.X+e.Width > ScreenWidth || e.X < 0.0 {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (e *Enemy) ChangeDirection(hitEdge bool) {
+	if hitEdge {
+		e.Speed *= -1.0
+		e.Y += e.DropDistance
+	}
 }
 
 type PlayerAction struct {

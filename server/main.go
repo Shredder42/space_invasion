@@ -94,11 +94,23 @@ func (gs *GameServer) updateBullets() {
 }
 
 func (gs *GameServer) updateEnemies() {
+	hitEdge := false
 	for _, row := range gs.enemies {
 		for _, enemy := range row {
+			if enemy.CheckEdges() {
+				hitEdge = true
+				break
+			}
+		}
+	}
+
+	for _, row := range gs.enemies {
+		for _, enemy := range row {
+			enemy.ChangeDirection(hitEdge)
 			enemy.Move()
 		}
 	}
+
 }
 
 // need to remove player when disconnect
@@ -220,7 +232,7 @@ func createFleet() [][]*shared.Enemy {
 				Health:       1,
 				Speed:        1.0,
 				DropDistance: 15.0,
-				// width:        12.0 * shared.scaleEnemy,
+				Width:        12.0 * shared.ScaleEnemy,
 				// animations:   animation,
 			})
 		}
