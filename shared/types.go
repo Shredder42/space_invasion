@@ -46,23 +46,16 @@ type Enemy struct {
 	X            float64
 	Y            float64
 	Health       int
+	Speed        float64
 	DropDistance float64
 	// FrameCounter   int
 	// Frame          int
 	// AnimationSpeed int
 }
 
-// func (e *Enemy) Animate() {
-// 	e.FrameCounter -= 1
-// 	if e.FrameCounter == 0 {
-// 		e.FrameCounter = e.AnimationSpeed
-// 		if e.Frame == 1 {
-// 			e.Frame = 2
-// 		} else {
-// 			e.Frame = 1
-// 		}
-// 	}
-// }
+func (e *Enemy) Move() {
+	e.X += e.Speed
+}
 
 type PlayerAction struct {
 	ID        string `json:"id"`
