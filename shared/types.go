@@ -49,9 +49,6 @@ type Enemy struct {
 	Speed        float64
 	DropDistance float64
 	Width        float64
-	// FrameCounter   int
-	// Frame          int
-	// AnimationSpeed int
 }
 
 func (e *Enemy) Move() {
