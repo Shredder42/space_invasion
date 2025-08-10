@@ -28,6 +28,7 @@ type Game struct {
 	spaceshipImg2          *ebiten.Image
 	// clientEnemyImg1        *ebiten.Image
 	Enemy1Imgs map[int]*ebiten.Image
+	Enemy2Imgs map[int]*ebiten.Image
 	// player                 *ClientPlayer
 	enemyFleet [][]*Enemy
 	// bullets    []*Bullet
@@ -211,17 +212,37 @@ func (g *Game) updateEnemies(gameState *shared.GameState) {
 		clientEnemy, exists := g.clientEnemyFleet[serverEnemy.ID]
 
 		if !exists {
+			animation := g.Enemy1Imgs
+			if int(serverEnemy.ID[0]) == 1 || int(serverEnemy.ID[0]) == 3 {
+				animation = g.Enemy2Imgs
+			}
 			clientEnemy := &ClientEnemy{
 				Enemy:          serverEnemy,
 				FrameCounter:   20,
 				Frame:          1,
 				AnimationSpeed: 20,
-				Animations:     g.Enemy1Imgs,
+				Animations:     animation,
 			}
 			g.clientEnemyFleet[serverEnemy.ID] = clientEnemy
 		} else {
 			clientEnemy.Enemy = serverEnemy
 		}
+	}
+
+	// remove client enemies that are no longer in the server enemies
+	if len(gameState.Enemies) >= 1 {
+		existingEnemies := map[string]struct{}{}
+		for _, enemy := range gameState.Enemies {
+			existingEnemies[enemy.ID] = struct{}{}
+		}
+		for id := range g.clientEnemyFleet {
+			if _, ok := existingEnemies[id]; !ok {
+				delete(g.clientEnemyFleet, id)
+
+			}
+		}
+	} else {
+		g.clientEnemyFleet = map[string]*ClientEnemy{}
 	}
 }
 
@@ -439,6 +460,7 @@ func main() {
 		spaceshipImg2:          playerImg2,
 		// clientEnemyImg1:        clientEnemyImg1,
 		Enemy1Imgs:       enemy1,
+		Enemy2Imgs:       enemy2,
 		clientPlayers:    map[string]*ClientPlayer{},
 		clientBullets:    map[int]*ClientBullet{},
 		clientEnemyFleet: map[string]*ClientEnemy{},
