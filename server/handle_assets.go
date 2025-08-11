@@ -125,6 +125,7 @@ func (gs *GameServer) handleEnemyBulletCollisions() {
 				if gs.detectEnemyBulletCollision(enemy, bullet) {
 					bulletHits = append(bulletHits, bullet)
 					enemyHits = append(enemyHits, enemy)
+					gs.players[bullet.PlayerID].Score += enemy.Health
 				}
 			}
 		}

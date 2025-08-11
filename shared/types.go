@@ -21,6 +21,7 @@ type Player struct {
 	X         float64   `json:"x"`
 	Y         float64   `json:"y"`
 	ShootTime time.Time `json:"shootTime"`
+	Score     int       `json:"score"`
 }
 
 func (p *Player) MovePlayer(d string) {

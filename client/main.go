@@ -1,7 +1,7 @@
 package main
 
 import (
-	// "fmt"
+	"fmt"
 	"image"
 	"image/color"
 	"log"
@@ -169,10 +169,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	for _, player := range g.clientPlayers {
 		if player.ID == "player_1" {
-			text.Draw(screen, "player 1", g.gameFont, 10, 20, color.White)
+			text.Draw(screen, fmt.Sprintf("Player 1: %d", player.Score), g.gameFont, 30, 20, color.White)
 		}
 		if player.ID == "player_2" {
-			text.Draw(screen, "player 2", g.gameFont, 800, 20, color.White)
+			text.Draw(screen, fmt.Sprintf("Player 2: %d", player.Score), g.gameFont, 750, 20, color.White)
 		}
 	}
 	// if g.myPlayerID == "player_2" {
@@ -231,7 +231,7 @@ func main() {
 		2: spritesImg.SubImage(image.Rect(18, 20, 30, 28)).(*ebiten.Image),
 	}
 
-	gameFont := loadFontFace("assets/fonts/Roboto/static/Roboto-Black.ttf", 24)
+	gameFont := loadFontFace("assets/fonts/Roboto-Black.ttf", 24)
 
 	game := &Game{
 		BackgroundImg:          backgroundImg,
