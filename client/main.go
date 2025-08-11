@@ -3,13 +3,19 @@ package main
 import (
 	// "fmt"
 	"image"
+	"image/color"
 	"log"
+	"os"
 	"time"
 
 	"github.com/Shredder42/space_invasion/shared"
 	"github.com/gorilla/websocket"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/text"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/opentype"
 )
 
 const (
@@ -27,6 +33,7 @@ type Game struct {
 	spaceshipImg2          *ebiten.Image
 	Enemy1Imgs             map[int]*ebiten.Image
 	Enemy2Imgs             map[int]*ebiten.Image
+	gameFont               font.Face
 
 	conn       *websocket.Conn
 	connected  bool
@@ -37,6 +44,29 @@ type Game struct {
 	clientPlayers    map[string]*ClientPlayer
 	clientBullets    map[int]*ClientBullet
 	clientEnemyFleet map[string]*ClientEnemy
+}
+
+func loadFontFace(path string, size float64) font.Face {
+	fontBytes, err := os.ReadFile(path)
+	if err != nil {
+		log.Printf("failed to load font: %v", err)
+	}
+
+	tt, err := opentype.Parse(fontBytes)
+	if err != nil {
+		log.Printf("text file not OpenType or TrueType: %v", err)
+	}
+
+	face, err := opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    24,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Printf("couldn't create font.Face: %v", err)
+	}
+
+	return face
 }
 
 func (g *Game) connectToServer() {
@@ -133,6 +163,22 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		opts.GeoM.Reset()
 	}
 
+	// textOpts := &text.DrawOptions{}
+	// textOpts.GeoM.Translate(100, 100)
+	// textOpts.ColorScale.ScaleWithColor(color.White)
+
+	for _, player := range g.clientPlayers {
+		if player.ID == "player_1" {
+			text.Draw(screen, "player 1", g.gameFont, 10, 20, color.White)
+		}
+		if player.ID == "player_2" {
+			text.Draw(screen, "player 2", g.gameFont, 800, 20, color.White)
+		}
+	}
+	// if g.myPlayerID == "player_2" {
+	// 	text.Draw(screen, "player 2", g.gameFont, 500, 200, color.White)
+	// }
+
 	// if g.connected {
 	// 	ebitenutil.DebugPrint(screen, "Connected to server!")
 	// } else {
@@ -185,6 +231,8 @@ func main() {
 		2: spritesImg.SubImage(image.Rect(18, 20, 30, 28)).(*ebiten.Image),
 	}
 
+	gameFont := loadFontFace("assets/fonts/Roboto/static/Roboto-Black.ttf", 24)
+
 	game := &Game{
 		BackgroundImg:          backgroundImg,
 		BackgroundBuildingsImg: backgroundBuildingsImg,
@@ -192,6 +240,7 @@ func main() {
 		spaceshipImg2:          playerImg2,
 		Enemy1Imgs:             enemy1,
 		Enemy2Imgs:             enemy2,
+		gameFont:               gameFont,
 		clientPlayers:          map[string]*ClientPlayer{},
 		clientBullets:          map[int]*ClientBullet{},
 		clientEnemyFleet:       map[string]*ClientEnemy{},
