@@ -151,16 +151,20 @@ func main() {
 		enemies:      createFleet(),
 	}
 
+	const port = "8080"
+	// const file
+
 	mux := http.NewServeMux()
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":" + port,
 		Handler: mux,
 	}
 
+	mux.HandleFunc("/healthz", gameServer.handlerReadiness)
 	mux.HandleFunc("/ws", gameServer.handleWebSocket)
 
 	go gameServer.startGameLoop()
 
-	log.Println("Server started on :8080")
+	log.Printf("Server started on port: %s\n", port)
 	log.Fatal(srv.ListenAndServe())
 }
