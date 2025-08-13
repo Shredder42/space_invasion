@@ -1,14 +1,24 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
+	"github.com/Shredder42/space_invasion/server/internal/database"
 	"github.com/Shredder42/space_invasion/shared"
 	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
+
+	_ "github.com/lib/pq"
 )
+
+type apiConfig struct {
+	db *database.Queries
+}
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -143,6 +153,25 @@ func (gs *GameServer) startGameLoop() {
 }
 
 func main() {
+	godotenv.Load()
+
+	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		log.Fatalf("DB_URL must be set")
+	}
+
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("Error opening database: %s", err)
+	}
+
+	dbQueries := database.New(db)
+
+	// need to add api config to the handlers then this error will go away
+	apiCfg := apiConfig{
+		db: dbQueries,
+	}
+
 	gameServer := &GameServer{
 		players:      map[string]*shared.Player{},
 		connections:  map[string]*websocket.Conn{},
