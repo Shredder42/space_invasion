@@ -160,7 +160,7 @@ func main() {
 		Handler: mux,
 	}
 
-	mux.HandleFunc("GET /healthz", gameServer.handlerReadiness)
+	mux.HandleFunc("GET /api/healthz", gameServer.handlerReadiness)
 
 	// web socket for game
 	mux.HandleFunc("/ws", gameServer.handleWebSocket)
