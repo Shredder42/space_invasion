@@ -167,7 +167,6 @@ func main() {
 
 	dbQueries := database.New(db)
 
-	// need to add api config to the handlers then this error will go away
 	apiCfg := apiConfig{
 		db: dbQueries,
 	}
@@ -190,6 +189,7 @@ func main() {
 	}
 
 	mux.HandleFunc("GET /api/healthz", gameServer.handlerReadiness)
+	mux.HandleFunc("POST /api/users", apiCfg.handlerCreateUsers)
 
 	// web socket for game
 	mux.HandleFunc("/ws", gameServer.handleWebSocket)
