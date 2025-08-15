@@ -17,7 +17,8 @@ import (
 )
 
 type apiConfig struct {
-	db *database.Queries
+	db       *database.Queries
+	platform string
 }
 
 var upgrader = websocket.Upgrader{
@@ -160,6 +161,11 @@ func main() {
 		log.Fatalf("DB_URL must be set")
 	}
 
+	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatalf("PLATFORM must be set")
+	}
+
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("Error opening database: %s", err)
@@ -168,7 +174,8 @@ func main() {
 	dbQueries := database.New(db)
 
 	apiCfg := apiConfig{
-		db: dbQueries,
+		db:       dbQueries,
+		platform: platform,
 	}
 
 	gameServer := &GameServer{
@@ -190,6 +197,7 @@ func main() {
 
 	mux.HandleFunc("GET /api/healthz", gameServer.handlerReadiness)
 	mux.HandleFunc("POST /api/users", apiCfg.handlerCreateUsers)
+	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 
 	// web socket for game
 	mux.HandleFunc("/ws", gameServer.handleWebSocket)
