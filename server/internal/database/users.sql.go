@@ -47,3 +47,22 @@ func (q *Queries) DeleteUsers(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, deleteUsers)
 	return err
 }
+
+const getUserByUsername = `-- name: GetUserByUsername :one
+SELECT id, created_at, updated_at, user_name, hashed_password
+FROM users
+WHERE user_name = $1
+`
+
+func (q *Queries) GetUserByUsername(ctx context.Context, userName string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByUsername, userName)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UserName,
+		&i.HashedPassword,
+	)
+	return i, err
+}

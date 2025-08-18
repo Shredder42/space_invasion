@@ -198,6 +198,7 @@ func main() {
 	mux.HandleFunc("GET /api/healthz", gameServer.handlerReadiness)
 	mux.HandleFunc("POST /api/users", apiCfg.handlerCreateUsers)
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
+	mux.HandleFunc("POST /api/login", apiCfg.handlerLogin)
 
 	// web socket for game
 	mux.HandleFunc("/ws", gameServer.handleWebSocket)

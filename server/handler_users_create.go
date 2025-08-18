@@ -34,11 +34,13 @@ func (cfg *apiConfig) handlerCreateUsers(w http.ResponseWriter, r *http.Request)
 	err := decoder.Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Error decoding parameters", err)
+		return
 	}
 
 	hashedPassword, err := auth.HashPassword(params.Password)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Error securing password", err)
+		return
 	}
 
 	user, err := cfg.db.CreateUser(r.Context(), database.CreateUserParams{
@@ -47,6 +49,7 @@ func (cfg *apiConfig) handlerCreateUsers(w http.ResponseWriter, r *http.Request)
 	})
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Error creating user", err)
+		return
 	}
 
 	respondWithJSON(w, http.StatusCreated, response{
