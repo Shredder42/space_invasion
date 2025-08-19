@@ -17,8 +17,9 @@ import (
 )
 
 type apiConfig struct {
-	db       *database.Queries
-	platform string
+	db        *database.Queries
+	platform  string
+	jwtSecret string
 }
 
 var upgrader = websocket.Upgrader{
@@ -166,6 +167,11 @@ func main() {
 		log.Fatalf("PLATFORM must be set")
 	}
 
+	jwtSecret := os.Getenv("SECRET")
+	if jwtSecret == "" {
+		log.Fatalf("SECRET must be set")
+	}
+
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("Error opening database: %s", err)
@@ -174,8 +180,9 @@ func main() {
 	dbQueries := database.New(db)
 
 	apiCfg := apiConfig{
-		db:       dbQueries,
-		platform: platform,
+		db:        dbQueries,
+		platform:  platform,
+		jwtSecret: jwtSecret,
 	}
 
 	gameServer := &GameServer{

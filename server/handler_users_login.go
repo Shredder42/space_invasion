@@ -4,18 +4,21 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/Shredder42/space_invasion/server/internal/auth"
 )
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		UserName string `json:"user_name"`
-		Password string `json:"password"`
+		UserName         string `json:"user_name"`
+		Password         string `json:"password"`
+		ExpiresInSeconds int    `json:"expires_in_seconds"`
 	}
 
 	type response struct {
 		User
+		Token string `json:"token"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -38,6 +41,16 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	expireDuration := time.Hour
+	if params.ExpiresInSeconds > 0 && params.ExpiresInSeconds < 3600 {
+		expireDuration = time.Second * time.Duration(params.ExpiresInSeconds)
+	}
+
+	accessToken, err := auth.MakeJWT(user.ID, cfg.jwtSecret, expireDuration)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "couldn't get token string", err)
+	}
+
 	respondWithJSON(w, http.StatusOK, response{
 		User: User{
 			ID:        user.ID,
@@ -45,6 +58,7 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt: user.UpdatedAt,
 			UserName:  user.UserName,
 		},
+		Token: accessToken,
 	})
 
 	log.Printf("User %s logged in\n", user.UserName)
