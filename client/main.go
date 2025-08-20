@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"image"
 	"image/color"
 	"log"
+
+	// "net/http"
 	"os"
 	"time"
 
@@ -45,6 +48,35 @@ type Game struct {
 	clientBullets    map[int]*ClientBullet
 	clientEnemyFleet map[string]*ClientEnemy
 }
+
+func getCredentials() (string, string, string) {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Println("(C)reate account or (L)ogin")
+	option, err := reader.ReadString('\n')
+	if err != nil {
+		log.Printf("error reading option: %v", err)
+	}
+
+	fmt.Println("Enter username: ")
+	userName, err := reader.ReadString('\n')
+	if err != nil {
+		log.Printf("error reading user name")
+	}
+
+	fmt.Println("Enter password: ")
+	password, err := reader.ReadString('\n')
+	if err != nil {
+		log.Printf("error reading password")
+	}
+
+	return option, userName, password
+
+}
+
+// func createAccount(userName, password string) {
+// 	req, err :=
+// }
 
 func loadFontFace(path string, size float64) font.Face {
 	fontBytes, err := os.ReadFile(path)
@@ -192,6 +224,10 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func main() {
+	option, userName, password := getCredentials()
+
+	fmt.Printf("%s - %s - %s", option, userName, password)
+
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Space Invasion!")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
