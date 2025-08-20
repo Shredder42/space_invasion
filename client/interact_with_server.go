@@ -143,12 +143,12 @@ func loginUser(username, password, path string) string {
 
 }
 
-func (g *Game) connectToGameServer(userName string) {
+func (g *Game) connectToGameServer(userName, serverAddress string) {
 	header := http.Header{}
 	header.Set("Authorization", fmt.Sprintf("Bearer %s", g.token))
 	header.Set("Username", userName)
 
-	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws", header)
+	conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("ws://%s:8080/ws", serverAddress), header)
 	if err != nil {
 		log.Printf("Connection failed: %v", err)
 		return

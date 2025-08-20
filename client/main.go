@@ -10,6 +10,7 @@ import (
 
 	"github.com/Shredder42/space_invasion/shared"
 	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -25,10 +26,11 @@ const (
 	scaleEnemy   = 4.0
 	cooldown     = 300 * time.Millisecond
 
-	root  = "http://localhost:8080/"
-	api   = "api/"
-	users = "users"
-	login = "login"
+	local    = "localhost"
+	api      = "api/"
+	users    = "users"
+	login    = "login"
+	httpRoot = "http://"
 )
 
 type Game struct {
@@ -174,6 +176,12 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func main() {
+	godotenv.Load()
+
+	serverAddress := os.Getenv("GAME_SERVER")
+	if serverAddress == "" {
+		log.Fatalf("GAME_SERVER must be set")
+	}
 	option, userName, password := getCredentials()
 
 	if option != "c" && option != "l" {
@@ -181,10 +189,10 @@ func main() {
 	}
 
 	if option == "c" {
-		createAccount(userName, password, root+api+users)
+		createAccount(userName, password, httpRoot+serverAddress+":8080/"+api+users)
 	}
 
-	token := loginUser(userName, password, root+api+login)
+	token := loginUser(userName, password, httpRoot+serverAddress+":8080/"+api+login)
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Space Invasion!")
@@ -241,7 +249,7 @@ func main() {
 		token:                  token,
 	}
 
-	game.connectToGameServer(userName)
+	game.connectToGameServer(userName, serverAddress)
 	go game.listenForGameServerMessages()
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
