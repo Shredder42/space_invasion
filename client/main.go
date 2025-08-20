@@ -2,13 +2,15 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
 	"log"
-
-	// "net/http"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Shredder42/space_invasion/shared"
@@ -27,6 +29,10 @@ const (
 	scalePlayer  = 1.0 / 16.0
 	scaleEnemy   = 4.0
 	cooldown     = 300 * time.Millisecond
+
+	root  = "http://localhost:8080/"
+	api   = "api/"
+	users = "users"
 )
 
 type Game struct {
@@ -61,22 +67,63 @@ func getCredentials() (string, string, string) {
 	fmt.Println("Enter username: ")
 	userName, err := reader.ReadString('\n')
 	if err != nil {
-		log.Printf("error reading user name")
+		log.Printf("error reading user name: %v", err)
 	}
 
 	fmt.Println("Enter password: ")
 	password, err := reader.ReadString('\n')
 	if err != nil {
-		log.Printf("error reading password")
+		log.Printf("error reading password: %v", err)
 	}
 
-	return option, userName, password
+	option = strings.Trim(option, "\n")
+	userName = strings.Trim(option, "\n")
+	password = strings.Trim(option, "\n")
+
+	return strings.ToLower(option), userName, password
 
 }
 
-// func createAccount(userName, password string) {
-// 	req, err :=
-// }
+type Credentials struct {
+	UserName string `json:"user_name"`
+	Password string `json:"password"`
+}
+
+func createAccount(userName, password, path string) {
+	credentials := Credentials{
+		UserName: userName,
+		Password: password,
+	}
+
+	credentialsJSON, err := json.Marshal(credentials)
+	if err != nil {
+		log.Printf("error marshaling credentials: %v", err)
+		return
+	}
+
+	req, err := http.NewRequest("POST", path, bytes.NewBuffer(credentialsJSON))
+	if err != nil {
+		log.Println("error creating request: %v", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		log.Printf("error making request: %v", err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusCreated {
+		log.Println("account not created")
+		return
+	}
+
+	log.Printf("Account created for user: %s", userName)
+
+}
 
 func loadFontFace(path string, size float64) font.Face {
 	fontBytes, err := os.ReadFile(path)
@@ -226,7 +273,15 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 func main() {
 	option, userName, password := getCredentials()
 
-	fmt.Printf("%s - %s - %s", option, userName, password)
+	if option != "c" && option != "l" {
+		log.Fatal("invalid option")
+	}
+
+	if option == "c" {
+		createAccount(userName, password, root+api+users)
+	}
+
+	// login
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Space Invasion!")
