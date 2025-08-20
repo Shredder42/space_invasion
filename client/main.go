@@ -1,16 +1,11 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
 	"log"
-	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/Shredder42/space_invasion/shared"
@@ -33,6 +28,7 @@ const (
 	root  = "http://localhost:8080/"
 	api   = "api/"
 	users = "users"
+	login = "login"
 )
 
 type Game struct {
@@ -47,82 +43,13 @@ type Game struct {
 	conn       *websocket.Conn
 	connected  bool
 	myPlayerID string
+	token      string
 
 	// gameState *shared.GameState
 
 	clientPlayers    map[string]*ClientPlayer
 	clientBullets    map[int]*ClientBullet
 	clientEnemyFleet map[string]*ClientEnemy
-}
-
-func getCredentials() (string, string, string) {
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Println("(C)reate account or (L)ogin")
-	option, err := reader.ReadString('\n')
-	if err != nil {
-		log.Printf("error reading option: %v", err)
-	}
-
-	fmt.Println("Enter username: ")
-	userName, err := reader.ReadString('\n')
-	if err != nil {
-		log.Printf("error reading user name: %v", err)
-	}
-
-	fmt.Println("Enter password: ")
-	password, err := reader.ReadString('\n')
-	if err != nil {
-		log.Printf("error reading password: %v", err)
-	}
-
-	option = strings.Trim(option, "\n")
-	userName = strings.Trim(option, "\n")
-	password = strings.Trim(option, "\n")
-
-	return strings.ToLower(option), userName, password
-
-}
-
-type Credentials struct {
-	UserName string `json:"user_name"`
-	Password string `json:"password"`
-}
-
-func createAccount(userName, password, path string) {
-	credentials := Credentials{
-		UserName: userName,
-		Password: password,
-	}
-
-	credentialsJSON, err := json.Marshal(credentials)
-	if err != nil {
-		log.Printf("error marshaling credentials: %v", err)
-		return
-	}
-
-	req, err := http.NewRequest("POST", path, bytes.NewBuffer(credentialsJSON))
-	if err != nil {
-		log.Println("error creating request: %v", err)
-		return
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	client := http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		log.Printf("error making request: %v", err)
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusCreated {
-		log.Println("account not created")
-		return
-	}
-
-	log.Printf("Account created for user: %s", userName)
-
 }
 
 func loadFontFace(path string, size float64) font.Face {
@@ -146,39 +73,6 @@ func loadFontFace(path string, size float64) font.Face {
 	}
 
 	return face
-}
-
-func (g *Game) connectToServer() {
-	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws", nil)
-	if err != nil {
-		log.Printf("Connection failed: %v", err)
-		return
-	}
-
-	g.conn = conn
-	g.connected = true
-	log.Println("Connected to server!")
-}
-
-func (g *Game) listenForServerMessages() {
-	for {
-		var message shared.ServerMessage
-		err := g.conn.ReadJSON(&message)
-		if err != nil {
-			log.Printf("Client disconnected: %v", err)
-			return
-		}
-
-		switch message.Type {
-		case "player_id":
-			log.Printf(message.PlayerID)
-			g.myPlayerID = message.PlayerID
-		case "game_state":
-			g.updateClientPlayers(message.GameState)
-			g.updateClientBullets(message.GameState)
-			g.updateClientEnemies(message.GameState)
-		}
-	}
 }
 
 func (g *Game) Update() error {
@@ -281,7 +175,7 @@ func main() {
 		createAccount(userName, password, root+api+users)
 	}
 
-	// login
+	token := loginUser(userName, password, root+api+login)
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Space Invasion!")
@@ -335,10 +229,11 @@ func main() {
 		clientPlayers:          map[string]*ClientPlayer{},
 		clientBullets:          map[int]*ClientBullet{},
 		clientEnemyFleet:       map[string]*ClientEnemy{},
+		token:                  token,
 	}
 
-	game.connectToServer()
-	go game.listenForServerMessages() // not sure if this should stay as a go routine
+	game.connectToGameServer()
+	go game.listenForGameServerMessages()
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}
