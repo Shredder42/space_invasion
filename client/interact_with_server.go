@@ -50,9 +50,9 @@ func getCredentials() (string, string, string) {
 		log.Printf("error reading password: %v", err)
 	}
 
-	option = strings.Trim(option, "\n")
-	userName = strings.Trim(userName, "\n")
-	password = strings.Trim(password, "\n")
+	option = strings.TrimSpace(option)
+	userName = strings.TrimSpace(userName)
+	password = strings.TrimSpace(password)
 
 	return strings.ToLower(option), userName, password
 
