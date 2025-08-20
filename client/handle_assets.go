@@ -44,7 +44,7 @@ func (g *Game) updateClientPlayers(gameState *shared.GameState) {
 
 		if !exists {
 			clientPlayerImg := g.spaceshipImg1
-			if serverPlayer.ID == "player_2" {
+			if len(g.clientPlayers) == 1 {
 				clientPlayerImg = g.spaceshipImg2
 			}
 			clientPlayer = &ClientPlayer{

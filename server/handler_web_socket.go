@@ -31,8 +31,16 @@ func (gs *GameServer) handlerWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("Client connected!")
 
-	playerName := gs.addNewPlayer(conn)
-	log.Printf("Player %s connected", playerName)
+	userName := r.Header.Get("Username")
+
+	gs.addNewPlayer(conn, userName)
+	log.Printf("Player %s connected", userName)
+
+	if len(gs.players) == 2 {
+		gs.startCondition.L.Lock()
+		gs.startCondition.Broadcast()
+		gs.startCondition.L.Unlock()
+	}
 
 	for {
 		var action shared.PlayerAction

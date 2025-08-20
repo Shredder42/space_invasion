@@ -2,10 +2,11 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
+	// "fmt"
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/Shredder42/space_invasion/server/internal/database"
@@ -32,42 +33,43 @@ var upgrader = websocket.Upgrader{
 
 type GameServer struct {
 	apiConfig
-	players      map[string]*shared.Player
-	connections  map[string]*websocket.Conn
-	connToPlayer map[*websocket.Conn]string
-	bullets      map[int]*shared.Bullet
-	enemies      [][]*shared.Enemy
-	running      bool
+	players        map[string]*shared.Player
+	connections    map[string]*websocket.Conn
+	connToPlayer   map[*websocket.Conn]string
+	bullets        map[int]*shared.Bullet
+	enemies        [][]*shared.Enemy
+	running        bool
+	startCondition *sync.Cond
 }
 
-func (gs *GameServer) addNewPlayer(conn *websocket.Conn) string {
-	playerID := fmt.Sprintf("player_%d", len(gs.players)+1)
+func (gs *GameServer) addNewPlayer(conn *websocket.Conn, userName string) string {
+	// playerID := fmt.Sprintf("player_%d", len(gs.players)+1)
 	playerLocation := 300.0
-	if playerID == "player_2" {
+	if len(gs.players) == 1 {
 		playerLocation = 600.0
 	}
 
 	newPlayer := &shared.Player{
-		ID: playerID,
+		ID: userName,
 		// X:  float64(shared.ScreenWidth)/2.0 - 512.0*shared.ScalePlayer/2.0,
 		X: playerLocation,
 		Y: float64(shared.ScreenHeight) - 512.0*shared.ScalePlayer,
 	}
 
-	gs.players[playerID] = newPlayer
-	gs.connections[playerID] = conn
-	gs.connToPlayer[conn] = playerID
+	gs.players[userName] = newPlayer
+	gs.connections[userName] = conn
+	gs.connToPlayer[conn] = userName
 
 	message := shared.ServerMessage{
 		Type:     "player_id",
-		PlayerID: playerID,
+		PlayerID: userName,
 	}
 
 	conn.WriteJSON(message)
 
 	gs.broadcastGameState()
 
-	return playerID
+	return ""
 }
 
 // need to remove player when disconnect
@@ -106,6 +108,14 @@ func (gs *GameServer) broadcastGameState() {
 }
 
 func (gs *GameServer) startGameLoop() {
+	log.Println("Waiting for 2 players")
+
+	gs.startCondition.L.Lock()
+	for len(gs.players) < 2 {
+		gs.startCondition.Wait()
+	}
+	gs.startCondition.L.Unlock()
+
 	gs.running = true
 	ticker := time.NewTicker(16 * time.Millisecond) // ~60 FPS
 	defer ticker.Stop()
@@ -155,12 +165,13 @@ func main() {
 	}
 
 	gameServer := &GameServer{
-		apiConfig:    apiCfg,
-		players:      map[string]*shared.Player{},
-		connections:  map[string]*websocket.Conn{},
-		connToPlayer: map[*websocket.Conn]string{},
-		bullets:      map[int]*shared.Bullet{},
-		enemies:      createFleet(),
+		apiConfig:      apiCfg,
+		players:        map[string]*shared.Player{},
+		connections:    map[string]*websocket.Conn{},
+		connToPlayer:   map[*websocket.Conn]string{},
+		bullets:        map[int]*shared.Bullet{},
+		enemies:        createFleet(),
+		startCondition: sync.NewCond(&sync.Mutex{}),
 	}
 
 	const port = "8080"

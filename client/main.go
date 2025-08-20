@@ -140,13 +140,22 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// textOpts.GeoM.Translate(100, 100)
 	// textOpts.ColorScale.ScaleWithColor(color.White)
 
+	// playerCount := 1
 	for _, player := range g.clientPlayers {
-		if player.ID == "player_1" {
-			text.Draw(screen, fmt.Sprintf("Player 1: %d", player.Score), g.gameFont, 30, 20, color.White)
+		// if player.ID == "player_1" {
+		// 	text.Draw(screen, fmt.Sprintf("Player 1: %d", player.Score), g.gameFont, 30, 20, color.White)
+		// }
+		// if player.ID == "player_2" {
+		// 	text.Draw(screen, fmt.Sprintf("Player 2: %d", player.Score), g.gameFont, 750, 20, color.White)
+		// }
+		if player.ID == g.myPlayerID {
+			text.Draw(screen, fmt.Sprintf("%s: %d", player.ID, player.Score), g.gameFont, 30, 20, color.White)
+		} else {
+			text.Draw(screen, fmt.Sprintf("%s: %d", player.ID, player.Score), g.gameFont, 750, 20, color.White)
 		}
-		if player.ID == "player_2" {
-			text.Draw(screen, fmt.Sprintf("Player 2: %d", player.Score), g.gameFont, 750, 20, color.White)
-		}
+
+		// playerCount++
+
 	}
 	// if g.myPlayerID == "player_2" {
 	// 	text.Draw(screen, "player 2", g.gameFont, 500, 200, color.White)
@@ -232,7 +241,7 @@ func main() {
 		token:                  token,
 	}
 
-	game.connectToGameServer()
+	game.connectToGameServer(userName)
 	go game.listenForGameServerMessages()
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
