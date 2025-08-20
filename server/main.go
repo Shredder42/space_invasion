@@ -31,6 +31,7 @@ var upgrader = websocket.Upgrader{
 }
 
 type GameServer struct {
+	apiConfig
 	players      map[string]*shared.Player
 	connections  map[string]*websocket.Conn
 	connToPlayer map[*websocket.Conn]string
@@ -104,38 +105,6 @@ func (gs *GameServer) broadcastGameState() {
 
 }
 
-func (gs *GameServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Printf("Upgrade to websocket failed: %v", err)
-		return
-	}
-	defer conn.Close()
-
-	log.Println("Client connected!")
-
-	playerID := gs.addNewPlayer(conn)
-	log.Printf("Player %s connected", playerID)
-
-	for {
-		var action shared.PlayerAction
-
-		err := conn.ReadJSON(&action)
-		if err != nil {
-			log.Printf("Client disconnected: %v", err)
-			break
-		}
-
-		if action.Type == "move" {
-			gs.players[action.ID].MovePlayer(action.Direction)
-		}
-		if action.Type == "shoot" {
-			gs.shoot(action.ID)
-		}
-	}
-
-}
-
 func (gs *GameServer) startGameLoop() {
 	gs.running = true
 	ticker := time.NewTicker(16 * time.Millisecond) // ~60 FPS
@@ -186,6 +155,7 @@ func main() {
 	}
 
 	gameServer := &GameServer{
+		apiConfig:    apiCfg,
 		players:      map[string]*shared.Player{},
 		connections:  map[string]*websocket.Conn{},
 		connToPlayer: map[*websocket.Conn]string{},
@@ -208,7 +178,7 @@ func main() {
 	mux.HandleFunc("POST /api/login", apiCfg.handlerLogin)
 
 	// web socket for game
-	mux.HandleFunc("/ws", gameServer.handleWebSocket)
+	mux.HandleFunc("/ws", gameServer.handlerWebSocket)
 
 	go gameServer.startGameLoop()
 
