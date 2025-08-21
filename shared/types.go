@@ -2,8 +2,6 @@ package shared
 
 import (
 	"time"
-	// "github.com/hajimehoshi/ebiten/v2"
-	// "github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 const (
@@ -26,7 +24,7 @@ type Player struct {
 
 func (p *Player) MovePlayer(d string) {
 	if d == "left" {
-		p.X -= playerSpeed // this could be a player speed variable
+		p.X -= playerSpeed
 	}
 	if d == "right" {
 		p.X += playerSpeed

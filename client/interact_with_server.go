@@ -50,6 +50,7 @@ func getCredentials() (string, string, string) {
 		log.Printf("error reading password: %v", err)
 	}
 
+	// use trimspace here so works when compiled for Windows
 	option = strings.TrimSpace(option)
 	userName = strings.TrimSpace(userName)
 	password = strings.TrimSpace(password)

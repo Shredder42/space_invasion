@@ -13,10 +13,8 @@ func createFleet() [][]*shared.Enemy {
 	enemyFleet := [][]*shared.Enemy{}
 	for i := 0; i < 4; i++ {
 		enemyRow := []*shared.Enemy{}
-		// animation := enemy1
 		xOffset := 0.0
 		if i%2 == 1 {
-			// 	animation = enemy2
 			xOffset = 3.0
 		}
 		for j := 0; j < numberEnemiesX; j++ {
@@ -44,8 +42,8 @@ func (gs *GameServer) shoot(playerID string) {
 		newBullet := &shared.Bullet{
 			ID:       shared.BulletID,
 			PlayerID: playerID,
-			X:        gs.players[playerID].X + 16.0, // probably should make these dynamic if possible
-			Y:        gs.players[playerID].Y - 6.0,  // probably should make these dynamic if possible
+			X:        gs.players[playerID].X + 16.0,
+			Y:        gs.players[playerID].Y - 6.0,
 		}
 
 		gs.bullets[shared.BulletID] = newBullet
@@ -54,10 +52,9 @@ func (gs *GameServer) shoot(playerID string) {
 }
 
 func (gs *GameServer) updateBullets() {
-	// deltaTime := 1.0 / 60.0 // 60 FPS
 
 	for _, bullet := range gs.bullets {
-		bullet.Y -= 4.0 //* deltaTime
+		bullet.Y -= 4.0
 
 		if bullet.Y < -6.0 {
 			gs.removeBullet(bullet)
