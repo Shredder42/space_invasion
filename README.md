@@ -83,7 +83,6 @@ Playing the game is simple. Use the left and right arrow keys to move your ship 
 
 ## Future steps
 * Inject the IP address of the game server into the client at compile time. That way a .env file will not be required to connect to the game server
-* Ensure read and write safety of game asset maps
 * Store player high scores in the data base when they disconnect
 * Build more of the game, including things like:
     * new levels
