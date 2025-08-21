@@ -43,7 +43,6 @@ type GameServer struct {
 }
 
 func (gs *GameServer) addNewPlayer(conn *websocket.Conn, userName string) string {
-	// playerID := fmt.Sprintf("player_%d", len(gs.players)+1)
 	playerLocation := 300.0
 	if len(gs.players) == 1 {
 		playerLocation = 600.0
@@ -51,9 +50,8 @@ func (gs *GameServer) addNewPlayer(conn *websocket.Conn, userName string) string
 
 	newPlayer := &shared.Player{
 		ID: userName,
-		// X:  float64(shared.ScreenWidth)/2.0 - 512.0*shared.ScalePlayer/2.0,
-		X: playerLocation,
-		Y: float64(shared.ScreenHeight) - 512.0*shared.ScalePlayer,
+		X:  playerLocation,
+		Y:  float64(shared.ScreenHeight) - 512.0*shared.ScalePlayer,
 	}
 
 	gs.players[userName] = newPlayer
@@ -72,7 +70,7 @@ func (gs *GameServer) addNewPlayer(conn *websocket.Conn, userName string) string
 	return ""
 }
 
-// need to remove player when disconnect
+// remove player when disconnect
 
 func (gs *GameServer) broadcastGameState() {
 	players := make([]shared.Player, 0, len(gs.players))
@@ -110,6 +108,7 @@ func (gs *GameServer) broadcastGameState() {
 func (gs *GameServer) startGameLoop() {
 	log.Println("Waiting for 2 players")
 
+	// protects gs.players
 	gs.startCondition.L.Lock()
 	for len(gs.players) < 2 {
 		gs.startCondition.Wait()
@@ -175,7 +174,6 @@ func main() {
 	}
 
 	const port = "8080"
-	// const file
 
 	mux := http.NewServeMux()
 	srv := &http.Server{
