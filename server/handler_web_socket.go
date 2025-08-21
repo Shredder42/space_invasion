@@ -33,14 +33,14 @@ func (gs *GameServer) handlerWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	userName := r.Header.Get("Username")
 
-	gs.startCondition.L.Lock()
+	gs.mu.Lock()
 	gs.addNewPlayer(conn, userName)
 	log.Printf("Player %s connected", userName)
 
 	if len(gs.players) == 2 {
 		gs.startCondition.Broadcast()
 	}
-	gs.startCondition.L.Unlock()
+	gs.mu.Unlock()
 
 	for {
 		var action shared.PlayerAction
@@ -51,12 +51,15 @@ func (gs *GameServer) handlerWebSocket(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
+		// protect writing to players and bullets maps
+		gs.mu.Lock()
 		if action.Type == "move" {
 			gs.players[action.ID].MovePlayer(action.Direction)
 		}
 		if action.Type == "shoot" {
 			gs.shoot(action.ID)
 		}
+		gs.mu.Unlock()
 	}
 
 }

@@ -39,6 +39,7 @@ type GameServer struct {
 	bullets        map[int]*shared.Bullet
 	enemies        [][]*shared.Enemy
 	running        bool
+	mu             sync.Mutex
 	startCondition *sync.Cond
 }
 
@@ -108,12 +109,12 @@ func (gs *GameServer) broadcastGameState() {
 func (gs *GameServer) startGameLoop() {
 	log.Println("Waiting for 2 players")
 
-	// protects gs.players
-	gs.startCondition.L.Lock()
+	// wait for a broadcast signal when another player connects
+	gs.mu.Lock()
 	for len(gs.players) < 2 {
 		gs.startCondition.Wait()
 	}
-	gs.startCondition.L.Unlock()
+	gs.mu.Unlock()
 
 	gs.running = true
 	ticker := time.NewTicker(16 * time.Millisecond) // ~60 FPS
@@ -172,6 +173,8 @@ func main() {
 		enemies:        createFleet(),
 		startCondition: sync.NewCond(&sync.Mutex{}),
 	}
+
+	gameServer.startCondition = sync.NewCond(&gameServer.mu)
 
 	const port = "8080"
 
